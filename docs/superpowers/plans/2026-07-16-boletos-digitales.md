@@ -235,11 +235,15 @@ export const boletos = pgTable("boletos", {
 ```ts
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
 
 const sql = neon(process.env.DATABASE_URL!);
 export const db = drizzle(sql, { schema });
-export type DrizzleDb = typeof db;
+
+// Tipo agnóstico al driver: el mismo `DrizzleDb` sirve para el cliente Neon (runtime)
+// y para el harness PGlite de tests, ya que ambos extienden PgDatabase.
+export type DrizzleDb = PgDatabase<PgQueryResultHKT, typeof schema>;
 ```
 
 - [ ] **Step 3: `drizzle.config.ts`**
