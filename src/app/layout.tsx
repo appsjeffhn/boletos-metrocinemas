@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Work_Sans } from "next/font/google";
 import { RegisterSW } from "@/components/RegisterSW";
+import { InstallPWA } from "@/components/InstallPWA";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <RegisterSW />
+        <InstallPWA />
       </body>
     </html>
   );

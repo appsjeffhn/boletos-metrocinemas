@@ -41,28 +41,33 @@ export default async function TaquillaPage() {
   return (
     <main className="min-h-screen">
       <BrandHeader right={<BotonCerrarSesion />} />
-      <div className="max-w-sm mx-auto p-6 space-y-4">
-        <Card className="text-center space-y-1">
-          <p className="text-xs font-bold uppercase" style={{ color: "var(--black-60)" }}>Sede activa</p>
-          <p className="text-lg font-semibold">{sede?.nombre ?? "—"}</p>
+      <div className="max-w-sm mx-auto p-4 space-y-3">
+        {/* Sede compacta en una línea */}
+        <div className="flex items-center justify-between gap-2 text-sm px-1">
+          <span className="truncate">
+            <span style={{ color: "var(--black-60)" }}>Sede: </span>
+            <span className="font-semibold">{sede?.nombre ?? "—"}</span>
+          </span>
           {u.sedeIds.length > 1 && (
-            <Link href="/elegir-sede" className="text-sm underline" style={{ color: "var(--blue-hover)" }}>
-              Cambiar sede
+            <Link href="/elegir-sede" className="shrink-0 underline" style={{ color: "var(--blue-hover)" }}>
+              Cambiar
             </Link>
           )}
-        </Card>
+        </div>
 
-        <Card>
-          <h1 className="text-base font-semibold text-center mb-4">Escanear boleto</h1>
-          <Scanner />
-          <p className="text-center text-sm mt-4" style={{ color: "var(--black-60)" }}>
-            Apunta la cámara al código QR del boleto.
-          </p>
-        </Card>
-
+        {/* Escaneo múltiple arriba */}
         <Link href="/taquilla/multiple" className="btn btn-secondary w-full">
           Escaneo múltiple
         </Link>
+
+        {/* Escaneo individual */}
+        <Card className="p-4">
+          <h1 className="text-base font-semibold text-center mb-3">Escanear boleto</h1>
+          <Scanner />
+          <p className="text-center text-sm mt-3" style={{ color: "var(--black-60)" }}>
+            Apunta la cámara al código QR del boleto.
+          </p>
+        </Card>
       </div>
     </main>
   );
