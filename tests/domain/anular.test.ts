@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/test/db";
-import { empresas, sedes, usuarios, boletos } from "@/db/schema";
+import { empresas, sedes, usuarios, boletos, lotes } from "@/db/schema";
 import { generarLote, anularLote, canjearBoleto } from "@/domain/boletos";
 import { reportePorEmpresa } from "@/domain/reportes";
 import { eq } from "drizzle-orm";
@@ -26,7 +26,7 @@ describe("anularLote", () => {
     }, "2026-07-16");
     expect(r.ok).toBe(true);
 
-    const { anulados } = await anularLote(t.db, lote.loteId);
+    const { anulados } = await anularLote(t.db, lote.loteId, { motivo: "Error en la emisión", usuarioId: user.id });
     expect(anulados).toBe(2);
 
     const filas = await t.db.select().from(boletos).where(eq(boletos.loteId, lote.loteId));
@@ -36,8 +36,27 @@ describe("anularLote", () => {
     expect(otros).toHaveLength(2);
     expect(otros.every((b) => b.estado === "anulado")).toBe(true);
 
+    const [loteRow] = await t.db.select().from(lotes).where(eq(lotes.id, lote.loteId));
+    expect(loteRow.anuladoMotivo).toBe("Error en la emisión");
+    expect(loteRow.anuladoPor).toBe(user.id);
+    expect(loteRow.anuladoEn).not.toBeNull();
+
     const reporte = await reportePorEmpresa(t.db);
     const fila = reporte.find((f) => f.empresaId === emp.id);
     expect(fila).toMatchObject({ canjeados: 1, anulados: 2, pendientes: 0, emitidos: 3 });
+  });
+
+  it("lanza si el motivo está vacío o solo espacios", async () => {
+    const t = await createTestDb(); close = t.close;
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Empresa Z", prefijo: "EZ" }).returning();
+    const [user] = await t.db.insert(usuarios).values({
+      usuario: "admin1", passwordHash: "x", puedeAdmin: true,
+    }).returning();
+    const lote = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L", cantidad: 1, fechaVencimiento: "2099-12-31",
+    });
+
+    await expect(anularLote(t.db, lote.loteId, { motivo: "", usuarioId: user.id })).rejects.toThrow("Motivo requerido");
+    await expect(anularLote(t.db, lote.loteId, { motivo: "   ", usuarioId: user.id })).rejects.toThrow("Motivo requerido");
   });
 });

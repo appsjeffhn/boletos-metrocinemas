@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/test/db";
-import { empresas, sedes, usuarios, boletos } from "@/db/schema";
+import { empresas, sedes, usuarios, boletos, loteSedes } from "@/db/schema";
 import { generarLote, obtenerBoletoPorToken, canjearBoleto } from "@/domain/boletos";
 import { eq } from "drizzle-orm";
 
@@ -91,5 +91,47 @@ describe("canjearBoleto", () => {
     const { t, sede, user } = await setup();
     const r = await canjearBoleto(t.db, "noexiste", datos(sede.id, user.id), "2026-07-16");
     expect(r).toMatchObject({ ok: false, razon: "invalido" });
+  });
+
+  it("al releer un boleto canjeado, incluye operador y DNI del portador", async () => {
+    const { t, sede, user, token } = await setup();
+    await canjearBoleto(t.db, token, datos(sede.id, user.id), "2026-07-16");
+    const r = await obtenerBoletoPorToken(t.db, token, "2026-07-16");
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("no debería estar ok");
+    expect(r.boleto?.canje?.operador).toBe(user.usuario);
+    expect(r.boleto?.canje?.portadorDni).toBe("0801-1990-12345");
+  });
+});
+
+describe("canjearBoleto - restricción de sede", () => {
+  it("rechaza si el lote tiene sedes asignadas y la sede activa no está entre ellas", async () => {
+    const { t, sede: sedeA, user, token } = await setup();
+    const [sedeB] = await t.db.insert(sedes).values({ nombre: "CITY MALL" }).returning();
+    const [{ loteId }] = await t.db.select({ loteId: boletos.loteId }).from(boletos).where(eq(boletos.token, token));
+    await t.db.insert(loteSedes).values({ loteId, sedeId: sedeA.id });
+
+    const r = await canjearBoleto(t.db, token, datos(sedeB.id, user.id), "2026-07-16");
+    expect(r).toMatchObject({ ok: false, razon: "sede_no_valida" });
+
+    const [b] = await t.db.select().from(boletos).where(eq(boletos.token, token));
+    expect(b.estado).toBe("activo");
+  });
+
+  it("permite canjear cuando la sede activa sí está entre las asignadas al lote", async () => {
+    const { t, sede: sedeA, user, token } = await setup();
+    const [sedeB] = await t.db.insert(sedes).values({ nombre: "CITY MALL" }).returning();
+    const [{ loteId }] = await t.db.select({ loteId: boletos.loteId }).from(boletos).where(eq(boletos.token, token));
+    await t.db.insert(loteSedes).values([{ loteId, sedeId: sedeA.id }, { loteId, sedeId: sedeB.id }]);
+
+    const r = await canjearBoleto(t.db, token, datos(sedeA.id, user.id), "2026-07-16");
+    expect(r.ok).toBe(true);
+  });
+
+  it("un lote sin sedes asignadas es válido en cualquier sede", async () => {
+    const { t, user, token } = await setup();
+    const [otraSede] = await t.db.insert(sedes).values({ nombre: "CITY MALL" }).returning();
+    const r = await canjearBoleto(t.db, token, datos(otraSede.id, user.id), "2026-07-16");
+    expect(r.ok).toBe(true);
   });
 });

@@ -28,6 +28,7 @@ export async function anularLoteAction(formData: FormData) {
   const u = await getCurrentUser();
   if (!u || !u.puedeAdmin) redirect("/login");
   const loteId = Number(formData.get("loteId"));
-  await anularLote(db, loteId);
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  await anularLote(db, loteId, { motivo, usuarioId: u.userId });
   revalidatePath("/lotes");
 }

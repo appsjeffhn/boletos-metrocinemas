@@ -28,6 +28,7 @@ export default async function LotesPage() {
               <td>
                 <form action={anularLoteAction} className="flex items-center gap-2">
                   <input type="hidden" name="loteId" value={l.id} />
+                  <input name="motivo" placeholder="Motivo" required className="text-xs p-1 rounded bg-neutral-800" />
                   <button type="submit" className="text-xs px-2 py-1 rounded bg-neutral-800 text-red-400">
                     Anular
                   </button>

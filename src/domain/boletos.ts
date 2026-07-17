@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { DrizzleDb } from "@/db/client";
-import { lotes, boletos, empresas, sedes } from "@/db/schema";
+import { lotes, boletos, empresas, sedes, usuarios, loteSedes } from "@/db/schema";
 import { generarCodigo, generarToken } from "@/lib/codigo";
 
 export type NuevoLote = {
@@ -45,7 +46,18 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
   }
 }
 
-export async function anularLote(db: DrizzleDb, loteId: number): Promise<{ anulados: number }> {
+export async function anularLote(
+  db: DrizzleDb,
+  loteId: number,
+  opts: { motivo: string; usuarioId: number },
+): Promise<{ anulados: number }> {
+  const motivo = opts.motivo.trim();
+  if (!motivo) throw new Error("Motivo requerido");
+
+  await db.update(lotes)
+    .set({ anuladoEn: new Date(), anuladoMotivo: motivo, anuladoPor: opts.usuarioId })
+    .where(eq(lotes.id, loteId));
+
   const actualizados = await db.update(boletos)
     .set({ estado: "anulado" })
     .where(and(eq(boletos.loteId, loteId), eq(boletos.estado, "activo")))
@@ -64,23 +76,34 @@ export type BoletoInfo = {
   empresa: string;
   estado: "activo" | "canjeado" | "anulado";
   fechaVencimiento: string;
-  canje?: { sede: string | null; fecha: Date | null; portadorNombre: string | null };
+  canje?: {
+    sede: string | null;
+    fecha: Date | null;
+    portadorNombre: string | null;
+    portadorDni: string | null;
+    operador: string | null;
+  };
 };
 
-type Razon = "invalido" | "canjeado" | "anulado" | "vencido";
+type Razon = "invalido" | "canjeado" | "anulado" | "vencido" | "sede_no_valida";
+
+const operadores = alias(usuarios, "operadores");
 
 async function cargar(db: DrizzleDb, token: string) {
   const [row] = await db
     .select({
-      id: boletos.id, estado: boletos.estado, codigo: boletos.codigo,
+      id: boletos.id, loteId: boletos.loteId, estado: boletos.estado, codigo: boletos.codigo,
       fechaVencimiento: lotes.fechaVencimiento, empresa: empresas.nombre,
       canjeFecha: boletos.canjeFecha, canjePortadorNombre: boletos.canjePortadorNombre,
+      canjePortadorDni: boletos.canjePortadorDni,
       canjeSedeNombre: sedes.nombre,
+      canjeOperador: operadores.usuario,
     })
     .from(boletos)
     .innerJoin(lotes, eq(boletos.loteId, lotes.id))
     .innerJoin(empresas, eq(lotes.empresaId, empresas.id))
     .leftJoin(sedes, eq(boletos.canjeSedeId, sedes.id))
+    .leftJoin(operadores, eq(boletos.canjeUsuarioId, operadores.id))
     .where(eq(boletos.token, token));
   return row;
 }
@@ -89,7 +112,11 @@ function aInfo(row: NonNullable<Awaited<ReturnType<typeof cargar>>>): BoletoInfo
   return {
     codigo: row.codigo, empresa: row.empresa, estado: row.estado,
     fechaVencimiento: row.fechaVencimiento,
-    canje: { sede: row.canjeSedeNombre, fecha: row.canjeFecha, portadorNombre: row.canjePortadorNombre },
+    canje: {
+      sede: row.canjeSedeNombre, fecha: row.canjeFecha,
+      portadorNombre: row.canjePortadorNombre, portadorDni: row.canjePortadorDni,
+      operador: row.canjeOperador,
+    },
   };
 }
 
@@ -110,6 +137,17 @@ export type DatosCanje = {
 export async function canjearBoleto(db: DrizzleDb, token: string, datos: DatosCanje, hoy = hoyISO()) {
   const previo = await obtenerBoletoPorToken(db, token, hoy);
   if (!previo.ok) return { ok: false as const, razon: previo.razon };
+
+  // Restricción de sede: si el lote tiene sedes asignadas, la sede activa
+  // del operador debe estar entre ellas. Sin sedes asignadas = válido en todas
+  // (compatibilidad con lotes creados antes de esta restricción).
+  const [{ loteId }] = await db.select({ loteId: boletos.loteId })
+    .from(boletos).where(eq(boletos.token, token));
+  const sedesDelLote = await db.select({ sedeId: loteSedes.sedeId })
+    .from(loteSedes).where(eq(loteSedes.loteId, loteId));
+  if (sedesDelLote.length > 0 && !sedesDelLote.some((s) => s.sedeId === datos.sedeId)) {
+    return { ok: false as const, razon: "sede_no_valida" as Razon };
+  }
 
   // Guardia atómica: solo cambia si sigue 'activo'. Un segundo canje concurrente falla aquí.
   const actualizado = await db.update(boletos)

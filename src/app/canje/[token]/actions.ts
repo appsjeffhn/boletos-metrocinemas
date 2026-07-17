@@ -23,7 +23,8 @@ export async function confirmarCanje(
   });
   if (!r.ok) {
     const msg = { invalido: "Boleto inválido o falso", canjeado: "Este boleto ya fue canjeado",
-      anulado: "Boleto anulado", vencido: "Boleto vencido" }[r.razon];
+      anulado: "Boleto anulado", vencido: "Boleto vencido",
+      sede_no_valida: "Este boleto no es válido en esta sede" }[r.razon];
     return { error: msg };
   }
   return { ok: true, codigo: r.codigo };

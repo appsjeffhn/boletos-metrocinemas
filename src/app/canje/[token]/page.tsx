@@ -11,7 +11,7 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
   const r = await obtenerBoletoPorToken(db, token);
 
   if (!r.ok) {
-    const msg = { invalido: "Boleto inválido o falso", canjeado: "Ya fue canjeado", anulado: "Boleto anulado", vencido: "Boleto vencido" }[r.razon];
+    const msg = { invalido: "Boleto inválido o falso", canjeado: "Ya fue canjeado", anulado: "Boleto anulado", vencido: "Boleto vencido", sede_no_valida: "Boleto no válido en esta sede" }[r.razon];
     return (
       <main className="min-h-screen grid place-items-center bg-red-900 text-white p-6 text-center">
         <div><p className="text-3xl font-bold">✕ {msg}</p>
