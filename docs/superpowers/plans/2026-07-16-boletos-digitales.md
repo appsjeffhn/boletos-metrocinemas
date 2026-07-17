@@ -95,6 +95,11 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     globals: true,
+    // PGlite abre una instancia Postgres en memoria por archivo; en Windows el
+    // paralelismo entre archivos causa contención/timeouts. Serializar hace la
+    // suite fiable.
+    fileParallelism: false,
+    testTimeout: 20000,
   },
   resolve: { alias: { "@": new URL("./src", import.meta.url).pathname } },
 });
