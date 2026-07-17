@@ -13,12 +13,13 @@ export default async function DashboardPage() {
     <section className="space-y-6">
       <h1 className="text-[28px] leading-8">Dashboard</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <StatCard label="Empresas" value={kpis.empresas} />
         <StatCard label="Lotes activos" value={kpis.lotesActivos} />
         <StatCard label="Emitidos" value={kpis.boletosEmitidos} />
         <StatCard label="Canjeados" value={kpis.boletosCanjeados} tone="success" />
         <StatCard label="Pendientes" value={kpis.boletosPendientes} tone="warning" />
+        <StatCard label="Anulados" value={kpis.boletosAnulados} tone="error" />
         <StatCard label="Canjes hoy" value={kpis.canjesHoy} tone="brand" />
       </div>
 
@@ -43,6 +44,52 @@ export default async function DashboardPage() {
                 <span className="w-10 shrink-0 text-right text-sm font-semibold">{s.canjeados}</span>
               </div>
             ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-0">
+        <h2 className="text-base font-semibold p-5 pb-0">Clientes activos</h2>
+        {kpis.clientesActivos.length === 0 ? (
+          <p className="text-sm text-[var(--black-60)] p-5">Sin clientes con boletos activos</p>
+        ) : (
+          <div className="p-5">
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Cliente</Th>
+                  <Th>Pendientes</Th>
+                  <Th>Canjeados</Th>
+                  <Th>Progreso</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {kpis.clientesActivos.map((c) => {
+                  const total = c.pendientes + c.canjeados;
+                  const pct = total > 0 ? (c.canjeados / total) * 100 : 0;
+                  return (
+                    <tr key={c.empresa}>
+                      <Td>{c.empresa}</Td>
+                      <Td>{c.pendientes}</Td>
+                      <Td>{c.canjeados}</Td>
+                      <Td>
+                        <div className="flex items-center gap-2 min-w-[8rem]">
+                          <div className="flex-1 h-3 rounded-full bg-[var(--black-10)] overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${pct}%`, background: "var(--blue-100)" }}
+                            />
+                          </div>
+                          <span className="w-10 shrink-0 text-right text-xs text-[var(--black-60)]">
+                            {Math.round(pct)}%
+                          </span>
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
           </div>
         )}
       </Card>
