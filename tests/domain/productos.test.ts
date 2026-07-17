@@ -48,4 +48,16 @@ describe("catálogo de productos", () => {
     const nombres = await nombresProductos(t.db);
     expect(nombres).toEqual(["Combo"]);
   });
+
+  it("rechaza precio negativo o no numérico", async () => {
+    const t = await createTestDb(); close = t.close;
+    expect(await crearProducto(t.db, { nombre: "A", precio: "-5" })).toEqual({ error: "El precio no es válido." });
+    expect(await crearProducto(t.db, { nombre: "B", precio: "abc" })).toEqual({ error: "El precio no es válido." });
+  });
+
+  it("rechaza precio fuera de rango (no lo reporta como duplicado)", async () => {
+    const t = await createTestDb(); close = t.close;
+    const r = await crearProducto(t.db, { nombre: "Caro", precio: "999999999.99" });
+    expect(r).toEqual({ error: "El precio es demasiado alto." });
+  });
 });

@@ -2,13 +2,21 @@ import { eq } from "drizzle-orm";
 import type { DrizzleDb } from "@/db/client";
 import { productos } from "@/db/schema";
 
-function normalizarPrecio(precio?: string | null): string | null {
-  if (precio == null) return null;
+function parsearPrecio(precio?: string | null): { precio: string | null } | { error: string } {
+  if (precio == null) return { precio: null };
   const s = String(precio).trim();
-  if (s === "") return null;
+  if (s === "") return { precio: null };
   const n = Number(s);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return n.toFixed(2);
+  if (!Number.isFinite(n) || n < 0) return { error: "El precio no es válido." };
+  if (n > 99999999.99) return { error: "El precio es demasiado alto." };
+  return { precio: n.toFixed(2) };
+}
+
+function esViolacionUnica(err: unknown): boolean {
+  const e = err as { code?: string; cause?: { code?: string }; message?: string };
+  return e?.code === "23505"
+    || e?.cause?.code === "23505"
+    || /duplicate key|unique constraint|productos_nombre_unique/i.test(e?.message ?? "");
 }
 
 export async function crearProducto(
@@ -18,14 +26,16 @@ export async function crearProducto(
   const nombre = input.nombre.trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
   const detalle = input.detalle?.trim() || null;
-  const precio = normalizarPrecio(input.precio);
+  const pr = parsearPrecio(input.precio);
+  if ("error" in pr) return { error: pr.error };
   try {
     const [row] = await db.insert(productos)
-      .values({ nombre, detalle, precio })
+      .values({ nombre, detalle, precio: pr.precio })
       .returning({ id: productos.id });
     return { id: row.id };
-  } catch {
-    return { error: "Ya existe un producto con ese nombre." };
+  } catch (err) {
+    if (esViolacionUnica(err)) return { error: "Ya existe un producto con ese nombre." };
+    throw err;
   }
 }
 
@@ -37,14 +47,16 @@ export async function editarProducto(
   const nombre = input.nombre.trim();
   if (!nombre) return { error: "El nombre es obligatorio." };
   const detalle = input.detalle?.trim() || null;
-  const precio = normalizarPrecio(input.precio);
+  const pr = parsearPrecio(input.precio);
+  if ("error" in pr) return { error: pr.error };
   try {
     await db.update(productos)
-      .set({ nombre, detalle, precio, ...(input.activo === undefined ? {} : { activo: input.activo }) })
+      .set({ nombre, detalle, precio: pr.precio, ...(input.activo === undefined ? {} : { activo: input.activo }) })
       .where(eq(productos.id, id));
     return { ok: true };
-  } catch {
-    return { error: "Ya existe un producto con ese nombre." };
+  } catch (err) {
+    if (esViolacionUnica(err)) return { error: "Ya existe un producto con ese nombre." };
+    throw err;
   }
 }
 
