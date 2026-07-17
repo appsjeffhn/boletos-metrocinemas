@@ -43,3 +43,6 @@ next-env.d.ts
 
 # superpowers scratch/ledger (not part of the app)
 .superpowers/
+
+# Archivo fuente original (no versionar)
+CANJEDEBOLETOSMOK.xlsx
