@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Boletos Metrocinemas
 
-## Getting Started
+Aplicación web (Next.js App Router + TypeScript) para la emisión y canje de boletos digitales de cine mediante códigos QR. Permite generar lotes de boletos para empresas, imprimir/entregar sus QR, y canjearlos una única vez en taquilla, en cualquier sede.
 
-First, run the development server:
+## Desarrollo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. `npm install`
+2. Copiar `.env.example` a `.env` y completar `DATABASE_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_APP_URL`.
+3. `npm run db:migrate && npm run db:seed`
+4. `npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Despliegue (Vercel + Neon)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Crear base Postgres en Vercel Marketplace (Neon). Copiar `DATABASE_URL`.
+2. En el proyecto Vercel, definir variables: `DATABASE_URL`, `SESSION_SECRET` (aleatorio ≥32 chars), `NEXT_PUBLIC_APP_URL` (dominio de producción).
+3. `npm run db:migrate` (una vez) contra la BD de producción.
+4. `ADMIN_USER=... ADMIN_PASS=... npm run db:seed` una sola vez para crear sedes y admin.
+5. Desplegar (push a la rama conectada o `vercel deploy --prod`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Roles
 
-## Learn More
+- **admin**: genera lotes, imprime QR, ve reportes, crea usuarios.
+- **taquilla**: escanea y canjea (sede fijada por su cuenta).
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — servidor de desarrollo.
+- `npm run build` / `npm run start` — build y arranque de producción.
+- `npm test` — suite de pruebas (Vitest).
+- `npm run db:generate` — genera migraciones de Drizzle a partir del esquema.
+- `npm run db:migrate` — aplica migraciones pendientes.
+- `npm run db:seed` — crea sedes y usuario admin inicial.
