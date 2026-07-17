@@ -1,11 +1,20 @@
 import { db } from "@/db/client";
 import { dashboardKpis } from "@/domain/dashboard";
+import { resumenProductos } from "@/domain/reportesProductos";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Table, Th, Td } from "@/components/ui/Table";
 
+function money(n: number): string {
+  return `L.${n.toFixed(2)}`;
+}
+
 export default async function DashboardPage() {
-  const kpis = await dashboardKpis(db);
+  const [kpis, resumen] = await Promise.all([dashboardKpis(db), resumenProductos(db, {})]);
+
+  const valOtorgado = resumen.reduce((s, r) => s + r.montoCreado, 0);
+  const valCanjeado = resumen.reduce((s, r) => s + r.montoCanjeado, 0);
+  const valPendiente = resumen.reduce((s, r) => s + r.montoPendiente, 0);
 
   const maxCanjesSede = Math.max(1, ...kpis.canjesPorSede.map((s) => s.canjeados));
 
@@ -21,6 +30,15 @@ export default async function DashboardPage() {
         <StatCard label="Pendientes" value={kpis.boletosPendientes} tone="warning" />
         <StatCard label="Anulados" value={kpis.boletosAnulados} tone="error" />
         <StatCard label="Canjes hoy" value={kpis.canjesHoy} tone="brand" />
+      </div>
+
+      <div>
+        <h2 className="text-base font-semibold mb-3">Valores de items</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Valor otorgado" value={money(valOtorgado)} />
+          <StatCard label="Valor canjeado" value={money(valCanjeado)} tone="success" />
+          <StatCard label="Valor pendiente" value={money(valPendiente)} tone="warning" />
+        </div>
       </div>
 
       <Card>
