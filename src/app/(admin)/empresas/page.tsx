@@ -1,24 +1,39 @@
 import { db } from "@/db/client";
 import { listarEmpresas } from "@/domain/empresasQuery";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { crearEmpresa } from "./actions";
+import { EmpresasTabla } from "./EmpresasTabla";
 
 export default async function EmpresasPage() {
-  const filas = await listarEmpresas(db);
+  const empresas = await listarEmpresas(db);
+
   return (
     <section className="space-y-6">
-      <h1 className="text-lg font-bold">Empresas (clientes)</h1>
-      <form action={crearEmpresa} className="flex flex-wrap gap-2">
-        <input name="nombre" placeholder="Nombre" required className="p-2 rounded bg-neutral-800" />
-        <input name="prefijo" placeholder="Prefijo (ej. MOK)" maxLength={6} className="p-2 rounded bg-neutral-800 w-40" />
-        <input name="contacto" placeholder="Contacto" className="p-2 rounded bg-neutral-800" />
-        <button className="px-4 rounded bg-red-600">Agregar</button>
-      </form>
-      <p className="text-xs text-neutral-500">Si dejas el prefijo vacío se genera de las iniciales del nombre. El código queda como M{"{"}prefijo{"}"}-XXXXXX.</p>
-      <ul className="divide-y divide-neutral-800">
-        {filas.map((e) => (
-          <li key={e.id} className="py-2">{e.nombre} <span className="font-mono text-red-400 text-sm">M{e.prefijo}-</span> <span className="text-neutral-400 text-sm">{e.contacto}</span></li>
-        ))}
-      </ul>
+      <h1 className="text-[28px] leading-8">Empresas</h1>
+
+      <Card>
+        <h2 className="text-base font-semibold mb-4">Nueva empresa</h2>
+        <form action={crearEmpresa} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+          <Input label="Nombre" name="nombre" placeholder="Nombre de la empresa" required />
+          <div className="flex flex-col gap-1">
+            <Input label="Prefijo (opcional)" name="prefijo" placeholder="ej. MOK" maxLength={6} />
+            <p className="text-xs text-[var(--black-60)]">
+              Se antepone M; ej. MOK → MMOK-
+            </p>
+          </div>
+          <Input label="Contacto" name="contacto" placeholder="Nombre de contacto" />
+          <Input label="Teléfono" name="telefono" placeholder="Teléfono" />
+          <div className="sm:col-span-2 lg:col-span-4">
+            <Button type="submit" variant="primary">
+              Agregar
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <EmpresasTabla empresas={empresas} />
     </section>
   );
 }
