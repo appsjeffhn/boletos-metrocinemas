@@ -16,6 +16,8 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
   const [crearKey, setCrearKey] = useState(0);
   const [editando, setEditando] = useState<ProductoCatalogo | null>(null);
   const [editarError, setEditarError] = useState<string | null>(null);
+  const [desactivando, setDesactivando] = useState<ProductoCatalogo | null>(null);
+  const [desactivarError, setDesactivarError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onCrear(formData: FormData) {
@@ -37,7 +39,12 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
   }
 
   function onDesactivar(formData: FormData) {
-    startTransition(async () => { await desactivarProductoAction(formData); });
+    setDesactivarError(null);
+    startTransition(async () => {
+      const r: ProductoActionResult = await desactivarProductoAction(formData);
+      if (r?.error) { setDesactivarError(r.error); return; }
+      setDesactivando(null);
+    });
   }
 
   return (
@@ -74,12 +81,10 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
                   <Button type="button" variant="secondary" className="text-xs px-3 py-1.5"
                     onClick={() => { setEditarError(null); setEditando(p); }}>Editar</Button>
                   {p.activo && (
-                    <form action={onDesactivar}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <Button type="submit" variant="danger" className="text-xs px-3 py-1.5" disabled={pending}>
-                        Desactivar
-                      </Button>
-                    </form>
+                    <Button type="button" variant="danger" className="text-xs px-3 py-1.5"
+                      onClick={() => { setDesactivarError(null); setDesactivando(p); }}>
+                      Desactivar
+                    </Button>
                   )}
                 </div>
               </Td>
@@ -103,6 +108,22 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" onClick={() => setEditando(null)} disabled={pending}>Cancelar</Button>
               <Button type="submit" variant="primary" disabled={pending}>{pending ? "Guardando…" : "Guardar"}</Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal open={desactivando !== null} onClose={() => setDesactivando(null)} title="Desactivar producto">
+        {desactivando && (
+          <form action={onDesactivar} className="space-y-3">
+            <input type="hidden" name="id" value={desactivando.id} />
+            <p className="text-sm">
+              ¿Desactivar <strong>{desactivando.nombre}</strong>? No aparecerá al armar nuevos lotes; puedes reactivarlo luego desde Editar.
+            </p>
+            {desactivarError && <p className="text-sm text-[var(--error-150)]">{desactivarError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={() => setDesactivando(null)} disabled={pending}>Cancelar</Button>
+              <Button type="submit" variant="danger" disabled={pending}>{pending ? "Desactivando…" : "Desactivar"}</Button>
             </div>
           </form>
         )}
