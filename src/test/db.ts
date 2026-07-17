@@ -50,6 +50,20 @@ async function crearEsquema(db: DrizzleDb) {
       lote_id integer NOT NULL REFERENCES lotes(id),
       sede_id integer NOT NULL REFERENCES sedes(id),
       PRIMARY KEY (lote_id, sede_id))`);
+  await db.execute(sql`
+    CREATE TABLE productos (
+      id serial PRIMARY KEY, nombre text NOT NULL UNIQUE, detalle text,
+      precio numeric(10,2), activo boolean NOT NULL DEFAULT true,
+      creado_en timestamp NOT NULL DEFAULT now())`);
+  await db.execute(sql`
+    CREATE TABLE lote_productos (
+      id serial PRIMARY KEY, lote_id integer NOT NULL REFERENCES lotes(id),
+      producto_id integer REFERENCES productos(id),
+      nombre text NOT NULL, detalle text, precio_unitario numeric(10,2),
+      cantidad_por_boleto integer NOT NULL DEFAULT 1, orden integer NOT NULL DEFAULT 0,
+      creado_en timestamp NOT NULL DEFAULT now())`);
+  await db.execute(sql`CREATE INDEX lote_productos_lote_idx ON lote_productos(lote_id)`);
+  await db.execute(sql`CREATE INDEX lote_productos_producto_idx ON lote_productos(producto_id)`);
 }
 
 export async function createTestDb() {

@@ -1,5 +1,5 @@
 import {
-  pgTable, pgEnum, serial, text, integer, timestamp, date, boolean, uniqueIndex, index, primaryKey,
+  pgTable, pgEnum, serial, text, integer, numeric, timestamp, date, boolean, uniqueIndex, index, primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const rolEnum = pgEnum("rol", ["admin", "taquilla"]);
@@ -76,4 +76,28 @@ export const boletos = pgTable("boletos", {
   tokenIdx: uniqueIndex("boletos_token_idx").on(t.token),
   loteIdx: index("boletos_lote_idx").on(t.loteId),
   estadoIdx: index("boletos_estado_idx").on(t.estado),
+}));
+
+export const productos = pgTable("productos", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull().unique(),
+  detalle: text("detalle"),
+  precio: numeric("precio", { precision: 10, scale: 2 }),
+  activo: boolean("activo").notNull().default(true),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+});
+
+export const loteProductos = pgTable("lote_productos", {
+  id: serial("id").primaryKey(),
+  loteId: integer("lote_id").notNull().references(() => lotes.id),
+  productoId: integer("producto_id").references(() => productos.id),
+  nombre: text("nombre").notNull(),
+  detalle: text("detalle"),
+  precioUnitario: numeric("precio_unitario", { precision: 10, scale: 2 }),
+  cantidadPorBoleto: integer("cantidad_por_boleto").notNull().default(1),
+  orden: integer("orden").notNull().default(0),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+}, (t) => ({
+  loteIdx: index("lote_productos_lote_idx").on(t.loteId),
+  productoIdx: index("lote_productos_producto_idx").on(t.productoId),
 }));

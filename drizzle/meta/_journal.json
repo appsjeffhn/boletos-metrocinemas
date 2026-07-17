@@ -15,6 +15,13 @@
       "when": 1784272958954,
       "tag": "0001_sour_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784315357431,
+      "tag": "0002_cool_ozymandias",
+      "breakpoints": true
     }
   ]
 }
