@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Archivo fuente original (no versionar)
 CANJEDEBOLETOSMOK.xlsx
+
+.vercel
+.env*

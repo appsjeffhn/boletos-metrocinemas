@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { db } from "@/db/client";
 import { reportePorEmpresa } from "@/domain/reportes";
+import { cerrarSesion } from "../logout/actions";
 
 export default async function ReportesPage() {
   const rep = await reportePorEmpresa(db);
@@ -8,7 +8,9 @@ export default async function ReportesPage() {
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">Reportes</h1>
-        <Link href="/logout" className="text-sm text-neutral-400">Cerrar sesión</Link>
+        <form action={cerrarSesion}>
+          <button type="submit" className="text-sm text-neutral-400 hover:text-white">Cerrar sesión</button>
+        </form>
       </div>
       <table className="w-full text-sm">
         <thead><tr className="text-left text-neutral-400"><th>Empresa</th><th>Emitidos</th><th>Canjeados</th><th>Pendientes</th><th></th></tr></thead>
