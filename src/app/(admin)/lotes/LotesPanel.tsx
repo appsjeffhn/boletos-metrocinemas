@@ -1,6 +1,5 @@
 "use client";
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -235,12 +234,12 @@ export function LotesPanel({
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-2">
-                  <Link
+                  <a
                     className="btn btn-secondary text-xs px-3 py-1.5"
-                    href={`/lotes/${l.id}/imprimir`}
+                    href={`/api/lote/${l.id}/pdf`}
                   >
                     Imprimir/PDF
-                  </Link>
+                  </a>
                   <a className="btn btn-secondary text-xs px-3 py-1.5" href={`/api/lote/${l.id}/qr-zip`}>
                     Descargar QR (ZIP)
                   </a>
