@@ -1679,6 +1679,7 @@ git commit -m "feat(domain): reporte de items (resumen por producto + detalle de
 ## Task 9: Reporte de items — UI + exportación CSV
 
 **Files:**
+- Modify: `src/domain/exportar.ts` (exportar el helper `esc` para reutilizarlo)
 - Create: `src/domain/exportarProductos.ts`
 - Test: `tests/domain/exportar-productos.test.ts`
 - Create: `src/app/(admin)/reportes/productos/page.tsx`
@@ -1733,14 +1734,19 @@ Expected: FAIL — `@/domain/exportarProductos` no existe.
 
 - [ ] **Step 3: Implementar el CSV**
 
-Crear `src/domain/exportarProductos.ts`:
+Primero, exportar el helper `esc` existente para reutilizarlo. En `src/domain/exportar.ts`, cambiar la línea `function esc(v: string): string {` por:
+
+```ts
+export function esc(v: string): string {
+```
+
+(No cambia el comportamiento; `tests/domain/exportar.test.ts` sigue verde.)
+
+Luego crear `src/domain/exportarProductos.ts`:
 
 ```ts
 import type { CanjeProductoRow } from "@/domain/reportesProductos";
-
-function esc(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
+import { esc } from "@/domain/exportar";
 
 export function aCsvCanjesProductos(filas: CanjeProductoRow[]): string {
   const cols = ["producto", "empresa", "sede", "loteId", "codigo", "cantidad", "precioUnitario", "importe", "operador", "fecha"];
