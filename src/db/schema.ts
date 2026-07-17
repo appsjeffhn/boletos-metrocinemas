@@ -1,5 +1,5 @@
 import {
-  pgTable, pgEnum, serial, text, integer, timestamp, date, boolean, uniqueIndex, index,
+  pgTable, pgEnum, serial, text, integer, timestamp, date, boolean, uniqueIndex, index, primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const rolEnum = pgEnum("rol", ["admin", "taquilla"]);
@@ -14,8 +14,10 @@ export const usuarios = pgTable("usuarios", {
   id: serial("id").primaryKey(),
   usuario: text("usuario").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  rol: rolEnum("rol").notNull(),
-  sedeId: integer("sede_id").references(() => sedes.id),
+  rol: rolEnum("rol"), // legado; ya no es requerido, ver puedeAdmin/puedeTaquilla
+  sedeId: integer("sede_id").references(() => sedes.id), // legado; ver usuarioSedes
+  puedeAdmin: boolean("puede_admin").notNull().default(false),
+  puedeTaquilla: boolean("puede_taquilla").notNull().default(false),
   activo: boolean("activo").notNull().default(true),
   creadoEn: timestamp("creado_en").notNull().defaultNow(),
 });
@@ -25,6 +27,7 @@ export const empresas = pgTable("empresas", {
   nombre: text("nombre").notNull().unique(),
   prefijo: text("prefijo").notNull(), // iniciales, ej. "MOK"; el código será M + prefijo + "-XXXXXX"
   contacto: text("contacto"),
+  telefono: text("telefono"),
   notas: text("notas"),
   creadoEn: timestamp("creado_en").notNull().defaultNow(),
 });
@@ -37,7 +40,24 @@ export const lotes = pgTable("lotes", {
   fechaVencimiento: date("fecha_vencimiento").notNull(),
   creadoPor: integer("creado_por").references(() => usuarios.id),
   creadoEn: timestamp("creado_en").notNull().defaultNow(),
+  anuladoEn: timestamp("anulado_en"),
+  anuladoMotivo: text("anulado_motivo"),
+  anuladoPor: integer("anulado_por").references(() => usuarios.id),
 });
+
+export const usuarioSedes = pgTable("usuario_sedes", {
+  usuarioId: integer("usuario_id").notNull().references(() => usuarios.id),
+  sedeId: integer("sede_id").notNull().references(() => sedes.id),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.usuarioId, t.sedeId] }),
+}));
+
+export const loteSedes = pgTable("lote_sedes", {
+  loteId: integer("lote_id").notNull().references(() => lotes.id),
+  sedeId: integer("sede_id").notNull().references(() => sedes.id),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.loteId, t.sedeId] }),
+}));
 
 export const boletos = pgTable("boletos", {
   id: serial("id").primaryKey(),

@@ -14,17 +14,19 @@ async function crearEsquema(db: DrizzleDb) {
   await db.execute(sql`
     CREATE TABLE usuarios (
       id serial PRIMARY KEY, usuario text NOT NULL UNIQUE, password_hash text NOT NULL,
-      rol rol NOT NULL, sede_id integer REFERENCES sedes(id),
+      rol rol, sede_id integer REFERENCES sedes(id),
+      puede_admin boolean NOT NULL DEFAULT false, puede_taquilla boolean NOT NULL DEFAULT false,
       activo boolean NOT NULL DEFAULT true, creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`
     CREATE TABLE empresas (
       id serial PRIMARY KEY, nombre text NOT NULL UNIQUE, prefijo text NOT NULL,
-      contacto text, notas text, creado_en timestamp NOT NULL DEFAULT now())`);
+      contacto text, telefono text, notas text, creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`
     CREATE TABLE lotes (
       id serial PRIMARY KEY, empresa_id integer NOT NULL REFERENCES empresas(id),
       descripcion text NOT NULL, cantidad integer NOT NULL, fecha_vencimiento date NOT NULL,
-      creado_por integer REFERENCES usuarios(id), creado_en timestamp NOT NULL DEFAULT now())`);
+      creado_por integer REFERENCES usuarios(id), creado_en timestamp NOT NULL DEFAULT now(),
+      anulado_en timestamp, anulado_motivo text, anulado_por integer REFERENCES usuarios(id))`);
   await db.execute(sql`
     CREATE TABLE boletos (
       id serial PRIMARY KEY, lote_id integer NOT NULL REFERENCES lotes(id),
@@ -38,6 +40,16 @@ async function crearEsquema(db: DrizzleDb) {
   await db.execute(sql`CREATE UNIQUE INDEX boletos_token_idx ON boletos(token)`);
   await db.execute(sql`CREATE INDEX boletos_lote_idx ON boletos(lote_id)`);
   await db.execute(sql`CREATE INDEX boletos_estado_idx ON boletos(estado)`);
+  await db.execute(sql`
+    CREATE TABLE usuario_sedes (
+      usuario_id integer NOT NULL REFERENCES usuarios(id),
+      sede_id integer NOT NULL REFERENCES sedes(id),
+      PRIMARY KEY (usuario_id, sede_id))`);
+  await db.execute(sql`
+    CREATE TABLE lote_sedes (
+      lote_id integer NOT NULL REFERENCES lotes(id),
+      sede_id integer NOT NULL REFERENCES sedes(id),
+      PRIMARY KEY (lote_id, sede_id))`);
 }
 
 export async function createTestDb() {

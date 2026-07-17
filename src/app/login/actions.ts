@@ -17,7 +17,8 @@ export async function iniciarSesion(
   if (!u || !u.activo || !(await verifyPassword(password, u.passwordHash))) {
     return { error: "Usuario o contraseña incorrectos" };
   }
-  const token = await signSession({ userId: u.id, rol: u.rol, sedeId: u.sedeId });
+  // TODO(v2): reemplazar por puedeAdmin/puedeTaquilla cuando el login se actualice (fuera de alcance de esta tarea de esquema).
+  const token = await signSession({ userId: u.id, rol: u.rol as "admin" | "taquilla", sedeId: u.sedeId });
   await setSessionCookie(token);
   redirect(u.rol === "admin" ? "/reportes" : "/taquilla");
 }
