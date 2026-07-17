@@ -45,7 +45,7 @@ Una aplicación web que:
 | Roles | Admin central + Taquilla (por sede) |
 | Validez extra | Fecha de vencimiento + válido en cualquier sede |
 | Datos manuales al canjear | Nombre del portador + DNI del portador |
-| Formato de código legible | `MMOK-XXXXXX` (ej. `MMOK-7F3K9Q`) |
+| Formato de código legible | `M{INICIALES}-XXXXXX` — `M` + iniciales de la empresa (ej. empresa "MOK" → `MMOK-7F3K9Q`; "Coca Cola" → `MCC-7F3K9Q`) |
 | Login de taquilla | Usuario/contraseña, cada cuenta asignada a una sede |
 
 ## 4. Sedes (fijas)
@@ -71,6 +71,9 @@ SANTA ROSA DE COPAN, PUERTO CORTES.
 ### `empresas` (clientes grandes)
 - `id`
 - `nombre` (único)
+- `prefijo` (iniciales de la empresa, ej. `MOK`, `CC`; se antepone `M` al generar el
+  código, así "MOK" produce `MMOK-XXXXXX`). Se auto-sugiere del nombre pero el admin
+  lo puede editar. Solo A–Z y 0–9, 1–6 caracteres.
 - `contacto` (nullable)
 - `notas` (nullable)
 - `creado_en`
@@ -87,7 +90,7 @@ SANTA ROSA DE COPAN, PUERTO CORTES.
 ### `boletos`
 - `id`
 - `lote_id` → `lotes`
-- `codigo` (único, formato `MMOK-XXXXXX`, legible por humanos)
+- `codigo` (único, formato `M{INICIALES}-XXXXXX`, legible por humanos)
 - `token` (único, alta entropía; es lo que va dentro del QR)
 - `estado`: `activo` | `canjeado` | `anulado`
 - **Datos de canje (nullable hasta el canje):**

@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Sedes fijas (7): `NOVACENTRO`, `PLAZA AMERICA`, `PLAZA MIRAFLORES`, `MEGAMALL`, `DANLI`, `SANTA ROSA DE COPAN`, `PUERTO CORTES`.
-- Formato de código legible: `MMOK-XXXXXX` donde `XXXXXX` son 6 caracteres del alfabeto Crockford Base32 sin ambiguos (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`).
+- Formato de código legible: `M{PREFIJO}-XXXXXX` donde `PREFIJO` son las iniciales de la empresa (1–6 chars A–Z/0–9) y `XXXXXX` son 6 caracteres del alfabeto Crockford Base32 sin ambiguos (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`). Ej.: empresa "MOK" → `MMOK-7F3K9Q`; "Coca Cola" (prefijo `CC`) → `MCC-7F3K9Q`. La `M` inicial (Metrocinemas) siempre se antepone; el prefijo se guarda por empresa.
 - `token` del QR: 32 caracteres hex mínimo (≥128 bits) generados con CSPRNG (`crypto.randomBytes`).
 - Roles: `admin` | `taquilla`. Todo usuario `taquilla` tiene `sede_id`; `admin` no.
 - Estados de boleto: `activo` | `canjeado` | `anulado`.
@@ -194,6 +194,7 @@ export const usuarios = pgTable("usuarios", {
 export const empresas = pgTable("empresas", {
   id: serial("id").primaryKey(),
   nombre: text("nombre").notNull().unique(),
+  prefijo: text("prefijo").notNull(), // iniciales, ej. "MOK"; el código será M + prefijo + "-XXXXXX"
   contacto: text("contacto"),
   notas: text("notas"),
   creadoEn: timestamp("creado_en").notNull().defaultNow(),
@@ -277,8 +278,8 @@ async function crearEsquema(db: DrizzleDb) {
       activo boolean NOT NULL DEFAULT true, creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`
     CREATE TABLE empresas (
-      id serial PRIMARY KEY, nombre text NOT NULL UNIQUE, contacto text, notas text,
-      creado_en timestamp NOT NULL DEFAULT now())`);
+      id serial PRIMARY KEY, nombre text NOT NULL UNIQUE, prefijo text NOT NULL,
+      contacto text, notas text, creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`
     CREATE TABLE lotes (
       id serial PRIMARY KEY, empresa_id integer NOT NULL REFERENCES empresas(id),
@@ -348,23 +349,36 @@ git add -A && git commit -m "feat(db): schema + PGlite test harness"
 
 **Interfaces:**
 - Produces:
-  - `generarCodigo(): string` → `MMOK-XXXXXX` (6 chars Crockford Base32 sin ambiguos).
+  - `normalizarPrefijo(nombre: string): string` → deriva iniciales A–Z/0–9 (máx 6) desde un texto (para auto-sugerir); si queda vacío devuelve `"X"`.
+  - `generarCodigo(prefijo: string): string` → `M{PREFIJO}-XXXXXX` (6 chars Crockford Base32 sin ambiguos). El `prefijo` se normaliza (mayúsculas, solo A–Z/0–9, máx 6).
   - `generarToken(): string` → 32 chars hex (16 bytes CSPRNG).
 
 - [ ] **Step 1: Test** — `tests/lib/codigo.test.ts`
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { generarCodigo, generarToken } from "@/lib/codigo";
+import { generarCodigo, generarToken, normalizarPrefijo } from "@/lib/codigo";
+
+describe("normalizarPrefijo", () => {
+  it("deriva iniciales en mayúsculas, máx 6, sin símbolos", () => {
+    expect(normalizarPrefijo("MOK")).toBe("MOK");
+    expect(normalizarPrefijo("coca cola")).toBe("COCACO");
+    expect(normalizarPrefijo("!!!")).toBe("X");
+  });
+});
 
 describe("generarCodigo", () => {
-  it("cumple el formato MMOK-XXXXXX sin caracteres ambiguos", () => {
+  it("cumple el formato M{PREFIJO}-XXXXXX sin caracteres ambiguos", () => {
     for (let i = 0; i < 200; i++) {
-      expect(generarCodigo()).toMatch(/^MMOK-[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/);
+      expect(generarCodigo("MOK")).toMatch(/^MMOK-[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/);
     }
+    expect(generarCodigo("CC")).toMatch(/^MCC-[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/);
+  });
+  it("normaliza el prefijo recibido", () => {
+    expect(generarCodigo("cc")).toMatch(/^MCC-/);
   });
   it("genera valores altamente únicos", () => {
-    const set = new Set(Array.from({ length: 5000 }, () => generarCodigo()));
+    const set = new Set(Array.from({ length: 5000 }, () => generarCodigo("MOK")));
     expect(set.size).toBeGreaterThan(4990);
   });
 });
@@ -390,10 +404,16 @@ import { randomBytes, randomInt } from "crypto";
 
 const ALFABETO = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford, sin I L O U
 
-export function generarCodigo(): string {
+export function normalizarPrefijo(nombre: string): string {
+  const limpio = nombre.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  return limpio || "X";
+}
+
+export function generarCodigo(prefijo: string): string {
+  const p = normalizarPrefijo(prefijo);
   let s = "";
   for (let i = 0; i < 6; i++) s += ALFABETO[randomInt(ALFABETO.length)];
-  return `MMOK-${s}`;
+  return `M${p}-${s}`;
 }
 
 export function generarToken(): string {
@@ -539,7 +559,7 @@ afterEach(() => close?.());
 describe("generarLote", () => {
   it("crea N boletos únicos ligados a empresa y lote", async () => {
     const t = await createTestDb(); close = t.close;
-    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola" }).returning();
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola", prefijo: "CC" }).returning();
     const res = await generarLote(t.db, {
       empresaId: emp.id, descripcion: "Cortesías", cantidad: 50,
       fechaVencimiento: "2026-12-31",
@@ -549,6 +569,7 @@ describe("generarLote", () => {
     const tokens = new Set(res.boletos.map((b) => b.token));
     expect(codigos.size).toBe(50);
     expect(tokens.size).toBe(50);
+    expect(res.boletos.every((b) => b.codigo.startsWith("MCC-"))).toBe(true);
     const enDb = await t.db.select().from(boletos);
     expect(enDb).toHaveLength(50);
     expect(enDb.every((b) => b.estado === "activo")).toBe(true);
@@ -563,7 +584,7 @@ describe("generarLote", () => {
 ```ts
 import { eq, and } from "drizzle-orm";
 import type { DrizzleDb } from "@/db/client";
-import { lotes, boletos } from "@/db/schema";
+import { lotes, boletos, empresas } from "@/db/schema";
 import { generarCodigo, generarToken } from "@/lib/codigo";
 
 export type NuevoLote = {
@@ -575,6 +596,10 @@ export type NuevoLote = {
 };
 
 export async function generarLote(db: DrizzleDb, input: NuevoLote) {
+  const [emp] = await db.select({ prefijo: empresas.prefijo })
+    .from(empresas).where(eq(empresas.id, input.empresaId));
+  if (!emp) throw new Error("Empresa no encontrada");
+
   const [lote] = await db.insert(lotes).values({
     empresaId: input.empresaId,
     descripcion: input.descripcion,
@@ -585,7 +610,7 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
 
   const filas = Array.from({ length: input.cantidad }, () => ({
     loteId: lote.id,
-    codigo: generarCodigo(),
+    codigo: generarCodigo(emp.prefijo),
     token: generarToken(),
   }));
 
@@ -638,7 +663,7 @@ afterEach(() => close?.());
 
 async function setup(fechaVenc = "2026-12-31") {
   const t = await createTestDb(); close = t.close;
-  const [emp] = await t.db.insert(empresas).values({ nombre: "Empresa X" }).returning();
+  const [emp] = await t.db.insert(empresas).values({ nombre: "Empresa X", prefijo: "EX" }).returning();
   const [sede] = await t.db.insert(sedes).values({ nombre: "MEGAMALL" }).returning();
   const [user] = await t.db.insert(usuarios).values({
     usuario: "taq1", passwordHash: "x", rol: "taquilla", sedeId: sede.id,
@@ -817,7 +842,7 @@ afterEach(() => close?.());
 describe("reportePorEmpresa", () => {
   it("cuadra emitidos = canjeados + pendientes + anulados", async () => {
     const t = await createTestDb(); close = t.close;
-    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola" }).returning();
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola", prefijo: "CC" }).returning();
     const [sede] = await t.db.insert(sedes).values({ nombre: "DANLI" }).returning();
     const [u] = await t.db.insert(usuarios).values({ usuario: "t", passwordHash: "x", rol: "taquilla", sedeId: sede.id }).returning();
     const lote = await generarLote(t.db, { empresaId: emp.id, descripcion: "L", cantidad: 5, fechaVencimiento: "2026-12-31" });
@@ -833,7 +858,7 @@ describe("reportePorEmpresa", () => {
 describe("listarCanjes", () => {
   it("filtra por empresa y trae los datos del portador", async () => {
     const t = await createTestDb(); close = t.close;
-    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola" }).returning();
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Coca-Cola", prefijo: "CC" }).returning();
     const [sede] = await t.db.insert(sedes).values({ nombre: "DANLI" }).returning();
     const [u] = await t.db.insert(usuarios).values({ usuario: "t", passwordHash: "x", rol: "taquilla", sedeId: sede.id }).returning();
     const lote = await generarLote(t.db, { empresaId: emp.id, descripcion: "L", cantidad: 2, fechaVencimiento: "2026-12-31" });
@@ -1171,7 +1196,7 @@ afterEach(() => close?.());
 describe("listarEmpresas", () => {
   it("devuelve empresas ordenadas por nombre", async () => {
     const t = await createTestDb(); close = t.close;
-    await t.db.insert(empresas).values([{ nombre: "Zeta" }, { nombre: "Alfa" }]);
+    await t.db.insert(empresas).values([{ nombre: "Zeta", prefijo: "Z" }, { nombre: "Alfa", prefijo: "A" }]);
     const filas = await listarEmpresas(t.db);
     expect(filas.map((e) => e.nombre)).toEqual(["Alfa", "Zeta"]);
   });
@@ -1224,12 +1249,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
 import { empresas } from "@/db/schema";
+import { normalizarPrefijo } from "@/lib/codigo";
 
 export async function crearEmpresa(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
   if (!nombre) return;
+  const prefijoRaw = String(formData.get("prefijo") ?? "").trim();
+  const prefijo = normalizarPrefijo(prefijoRaw || nombre);
   await db.insert(empresas).values({
     nombre,
+    prefijo,
     contacto: String(formData.get("contacto") ?? "") || null,
     notas: String(formData.get("notas") ?? "") || null,
   }).onConflictDoNothing();
@@ -1250,12 +1279,14 @@ export default async function EmpresasPage() {
       <h1 className="text-lg font-bold">Empresas (clientes)</h1>
       <form action={crearEmpresa} className="flex flex-wrap gap-2">
         <input name="nombre" placeholder="Nombre" required className="p-2 rounded bg-neutral-800" />
+        <input name="prefijo" placeholder="Prefijo (ej. MOK)" maxLength={6} className="p-2 rounded bg-neutral-800 w-40" />
         <input name="contacto" placeholder="Contacto" className="p-2 rounded bg-neutral-800" />
         <button className="px-4 rounded bg-red-600">Agregar</button>
       </form>
+      <p className="text-xs text-neutral-500">Si dejas el prefijo vacío se genera de las iniciales del nombre. El código queda como M{"{"}prefijo{"}"}-XXXXXX.</p>
       <ul className="divide-y divide-neutral-800">
         {filas.map((e) => (
-          <li key={e.id} className="py-2">{e.nombre} <span className="text-neutral-400 text-sm">{e.contacto}</span></li>
+          <li key={e.id} className="py-2">{e.nombre} <span className="font-mono text-red-400 text-sm">M{e.prefijo}-</span> <span className="text-neutral-400 text-sm">{e.contacto}</span></li>
         ))}
       </ul>
     </section>
@@ -1297,7 +1328,7 @@ afterEach(() => close?.());
 describe("listarLotes", () => {
   it("lista lotes con nombre de empresa y cantidad", async () => {
     const t = await createTestDb(); close = t.close;
-    const [emp] = await t.db.insert(empresas).values({ nombre: "Pepsi" }).returning();
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Pepsi", prefijo: "PEP" }).returning();
     await generarLote(t.db, { empresaId: emp.id, descripcion: "Agosto", cantidad: 3, fechaVencimiento: "2026-12-31" });
     const filas = await listarLotes(t.db);
     expect(filas[0]).toMatchObject({ empresa: "Pepsi", descripcion: "Agosto", cantidad: 3 });
@@ -1429,7 +1460,7 @@ afterEach(() => close?.());
 describe("boletosDeLote", () => {
   it("trae código y token de cada boleto del lote", async () => {
     const t = await createTestDb(); close = t.close;
-    const [emp] = await t.db.insert(empresas).values({ nombre: "X" }).returning();
+    const [emp] = await t.db.insert(empresas).values({ nombre: "X", prefijo: "X" }).returning();
     const lote = await generarLote(t.db, { empresaId: emp.id, descripcion: "L", cantidad: 3, fechaVencimiento: "2026-12-31" });
     const filas = await boletosDeLote(t.db, lote.loteId);
     expect(filas).toHaveLength(3);
