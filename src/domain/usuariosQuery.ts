@@ -9,6 +9,7 @@ export type UsuarioListado = {
   puedeTaquilla: boolean;
   activo: boolean;
   sedes: string[];
+  sedeIds: number[];
 };
 
 export async function listarUsuarios(db: DrizzleDb): Promise<UsuarioListado[]> {
@@ -16,7 +17,7 @@ export async function listarUsuarios(db: DrizzleDb): Promise<UsuarioListado[]> {
     .select({
       id: usuarios.id, usuario: usuarios.usuario,
       puedeAdmin: usuarios.puedeAdmin, puedeTaquilla: usuarios.puedeTaquilla,
-      activo: usuarios.activo, sede: sedes.nombre,
+      activo: usuarios.activo, sede: sedes.nombre, sedeId: sedes.id,
     })
     .from(usuarios)
     .leftJoin(usuarioSedes, eq(usuarioSedes.usuarioId, usuarios.id))
@@ -29,11 +30,12 @@ export async function listarUsuarios(db: DrizzleDb): Promise<UsuarioListado[]> {
     if (!u) {
       u = {
         id: fila.id, usuario: fila.usuario, puedeAdmin: fila.puedeAdmin,
-        puedeTaquilla: fila.puedeTaquilla, activo: fila.activo, sedes: [],
+        puedeTaquilla: fila.puedeTaquilla, activo: fila.activo, sedes: [], sedeIds: [],
       };
       porUsuario.set(fila.id, u);
     }
     if (fila.sede) u.sedes.push(fila.sede);
+    if (fila.sedeId) u.sedeIds.push(fila.sedeId);
   }
   return Array.from(porUsuario.values());
 }
