@@ -13,13 +13,21 @@ export async function confirmarCanje(
 ): Promise<CanjeState> {
   const u = await getCurrentUser();
   if (!u) redirect("/login");
-  if (!u.activeSedeId) return { error: "Tu usuario no tiene sede asignada." };
+  if (!u.puedeTaquilla || !u.activeSedeId) {
+    return { error: "Tu usuario no tiene una sede activa." };
+  }
+
+  const portadorNombre = String(formData.get("portadorNombre") ?? "").trim();
+  const portadorDni = String(formData.get("portadorDni") ?? "").trim();
+  if (!portadorNombre || !portadorDni) {
+    return { error: "Nombre y DNI del portador son obligatorios." };
+  }
 
   const r = await canjearBoleto(db, token, {
     sedeId: u.activeSedeId,
     usuarioId: u.userId,
-    portadorNombre: String(formData.get("portadorNombre") ?? "").trim(),
-    portadorDni: String(formData.get("portadorDni") ?? "").trim(),
+    portadorNombre,
+    portadorDni,
   });
   if (!r.ok) {
     const msg = { invalido: "Boleto inválido o falso", canjeado: "Este boleto ya fue canjeado",

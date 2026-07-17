@@ -1,5 +1,9 @@
 "use client";
 import { useActionState } from "react";
+import { BrandHeader } from "@/components/BrandHeader";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { confirmarCanje, type CanjeState } from "./actions";
 
 export default function FormularioCanje(
@@ -9,30 +13,42 @@ export default function FormularioCanje(
     confirmarCanje.bind(null, token),
     {},
   );
+
   if (state?.ok) {
     return (
-      <main className="min-h-screen grid place-items-center bg-green-800 text-white p-6 text-center">
-        <div><p className="text-3xl font-bold">✓ Canje exitoso</p><p className="mt-2 font-mono">{state.codigo}</p>
-          <a href="/taquilla" className="inline-block mt-6 underline">Escanear otro</a></div>
+      <main
+        className="min-h-screen grid place-items-center p-6"
+        style={{ background: "var(--success-150)" }}
+      >
+        <Card className="max-w-sm w-full text-center space-y-4">
+          <p className="text-2xl font-bold" style={{ color: "var(--success-150)" }}>✓ Canje exitoso</p>
+          <p className="font-mono text-lg">{state.codigo}</p>
+          <a href="/taquilla" className="btn btn-secondary w-full">Escanear otro</a>
+        </Card>
       </main>
     );
   }
+
   return (
-    <main className="min-h-screen bg-neutral-950 text-white p-4">
-      <div className="max-w-sm mx-auto space-y-4">
-        <div className="bg-neutral-900 p-4 rounded">
-          <p className="text-sm text-neutral-400">Boleto válido</p>
+    <main className="min-h-screen">
+      <BrandHeader />
+      <div className="max-w-sm mx-auto p-6 space-y-4">
+        <Card className="space-y-1">
+          <p className="text-xs font-bold uppercase" style={{ color: "var(--black-60)" }}>Boleto válido</p>
           <p className="font-mono text-lg">{codigo}</p>
-          <p className="text-sm">Empresa: {empresa}</p>
-        </div>
-        <form action={action} className="space-y-3">
-          <input name="portadorNombre" placeholder="Nombre del portador" required className="w-full p-3 rounded bg-neutral-800" />
-          <input name="portadorDni" placeholder="DNI del portador" required className="w-full p-3 rounded bg-neutral-800" />
-          {state?.error && <p className="text-red-400">{state.error}</p>}
-          <button disabled={pending} className="w-full p-3 rounded bg-green-600 font-semibold disabled:opacity-50">
-            {pending ? "Canjeando…" : "Confirmar canje"}
-          </button>
-        </form>
+          <p className="text-sm" style={{ color: "var(--black-60)" }}>Empresa: {empresa}</p>
+        </Card>
+
+        <Card>
+          <form action={action} className="space-y-4">
+            <Input name="portadorNombre" label="Nombre del portador" required />
+            <Input name="portadorDni" label="DNI del portador" required />
+            {state?.error && <p className="text-sm" style={{ color: "var(--error-150)" }}>{state.error}</p>}
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? "Canjeando…" : "Confirmar canje"}
+            </Button>
+          </form>
+        </Card>
       </div>
     </main>
   );
