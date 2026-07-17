@@ -10,6 +10,10 @@ export default async function ReportesPage() {
     <section className="space-y-6">
       <h1 className="text-[28px] leading-8">Reportes</h1>
 
+      <Link href="/reportes/productos" className="btn btn-secondary text-sm">
+        Reporte de items
+      </Link>
+
       <Table>
         <thead>
           <tr>

@@ -3,7 +3,7 @@ type Fila = {
   portadorNombre: string | null; portadorDni: string | null; fecha: Date | null;
 };
 
-function esc(v: string): string {
+export function esc(v: string): string {
   return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
