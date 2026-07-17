@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { db } from "@/db/client";
 import { detalleEmpresa } from "@/domain/reportes";
+import { resumenProductos } from "@/domain/reportesProductos";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Table, Th, Td } from "@/components/ui/Table";
+import { ItemsResumenBox } from "@/components/ItemsResumenBox";
 
 export default async function ReporteEmpresaPage({
   params,
@@ -11,13 +13,16 @@ export default async function ReporteEmpresaPage({
   params: Promise<{ empresaId: string }>;
 }) {
   const { empresaId } = await params;
-  const d = await detalleEmpresa(db, Number(empresaId));
+  const [d, resumen] = await Promise.all([
+    detalleEmpresa(db, Number(empresaId)),
+    resumenProductos(db, { empresaId: Number(empresaId) }),
+  ]);
 
   if (!d) {
     return (
       <section className="space-y-6">
-        <Link href="/reportes" className="text-sm font-semibold text-[var(--blue-hover)] hover:underline">
-          ← Volver a reportes
+        <Link href="/reportes/empresas" className="text-sm font-semibold text-[var(--blue-hover)] hover:underline">
+          ← Volver a empresas
         </Link>
         <p className="text-[var(--black-60)]">Empresa no encontrada.</p>
       </section>
@@ -45,6 +50,8 @@ export default async function ReporteEmpresaPage({
           Exportar CSV
         </a>
       </div>
+
+      <ItemsResumenBox resumen={resumen} detalle />
 
       <Card className="p-0">
         <h2 className="text-base font-semibold p-5 pb-0">Lotes</h2>

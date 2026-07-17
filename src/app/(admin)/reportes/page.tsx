@@ -1,59 +1,30 @@
 import Link from "next/link";
-import { db } from "@/db/client";
-import { reportePorEmpresa } from "@/domain/reportes";
-import { Table, Th, Td } from "@/components/ui/Table";
+import { Card } from "@/components/ui/Card";
 
-export default async function ReportesPage() {
-  const rep = await reportePorEmpresa(db);
-
+export default function ReportesPage() {
   return (
     <section className="space-y-6">
       <h1 className="text-[28px] leading-8">Reportes</h1>
 
-      <Link href="/reportes/productos" className="btn btn-secondary text-sm">
-        Reporte de items
-      </Link>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link href="/reportes/empresas" className="block">
+          <Card className="h-full hover:border-[var(--blue-hover)] transition-colors">
+            <h2 className="text-base font-semibold">Reporte de empresas</h2>
+            <p className="text-sm text-[var(--black-60)] mt-1">
+              Emitidos, canjeados y pendientes por empresa, con el valor de los items otorgados.
+            </p>
+          </Card>
+        </Link>
 
-      <Table>
-        <thead>
-          <tr>
-            <Th>Empresa</Th>
-            <Th>Emitidos</Th>
-            <Th>Canjeados</Th>
-            <Th>Pendientes</Th>
-            <Th>Acciones</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rep.length === 0 && (
-            <tr>
-              <Td colSpan={5} className="text-center text-[var(--black-60)]">
-                Aún no hay empresas registradas.
-              </Td>
-            </tr>
-          )}
-          {rep.map((r) => (
-            <tr key={r.empresaId}>
-              <Td className="font-semibold">
-                <Link href={`/reportes/${r.empresaId}`} className="hover:text-[var(--blue-hover)]">
-                  {r.empresa}
-                </Link>
-              </Td>
-              <Td>{r.emitidos}</Td>
-              <Td>{r.canjeados}</Td>
-              <Td>{r.pendientes}</Td>
-              <Td>
-                <a
-                  className="text-sm font-semibold text-[var(--blue-hover)] hover:underline"
-                  href={`/reportes/exportar?empresaId=${r.empresaId}`}
-                >
-                  Exportar CSV
-                </a>
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+        <Link href="/reportes/productos" className="block">
+          <Card className="h-full hover:border-[var(--blue-hover)] transition-colors">
+            <h2 className="text-base font-semibold">Reporte de items</h2>
+            <p className="text-sm text-[var(--black-60)] mt-1">
+              Items creados, canjeados y pendientes con importes; filtros por fecha/empresa/sede y CSV.
+            </p>
+          </Card>
+        </Link>
+      </div>
     </section>
   );
 }
