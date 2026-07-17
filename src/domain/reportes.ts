@@ -46,3 +46,48 @@ export async function listarCanjes(db: DrizzleDb, filtro: FiltroCanjes) {
     .where(and(...cond))
     .orderBy(boletos.canjeFecha);
 }
+
+export type DetalleEmpresa = {
+  empresa: { id: number; nombre: string; prefijo: string; contacto: string | null; telefono: string | null };
+  lotes: {
+    id: number;
+    descripcion: string;
+    cantidad: number;
+    emitidos: number;
+    canjeados: number;
+    pendientes: number;
+    anulado: boolean;
+    vencimiento: string;
+  }[];
+  canjes: Awaited<ReturnType<typeof listarCanjes>>;
+};
+
+export async function detalleEmpresa(db: DrizzleDb, empresaId: number): Promise<DetalleEmpresa | null> {
+  const [empresa] = await db
+    .select({
+      id: empresas.id, nombre: empresas.nombre, prefijo: empresas.prefijo,
+      contacto: empresas.contacto, telefono: empresas.telefono,
+    })
+    .from(empresas)
+    .where(eq(empresas.id, empresaId));
+  if (!empresa) return null;
+
+  const lotesFilas = await db
+    .select({
+      id: lotes.id, descripcion: lotes.descripcion, cantidad: lotes.cantidad,
+      emitidos: sql<number>`count(${boletos.id})::int`,
+      canjeados: sql<number>`count(*) filter (where ${boletos.estado} = 'canjeado')::int`,
+      pendientes: sql<number>`count(*) filter (where ${boletos.estado} = 'activo')::int`,
+      anulado: sql<boolean>`(${lotes.anuladoEn} is not null)`,
+      vencimiento: lotes.fechaVencimiento,
+    })
+    .from(lotes)
+    .leftJoin(boletos, eq(boletos.loteId, lotes.id))
+    .where(eq(lotes.empresaId, empresaId))
+    .groupBy(lotes.id, lotes.descripcion, lotes.cantidad, lotes.anuladoEn, lotes.fechaVencimiento)
+    .orderBy(lotes.id);
+
+  const canjes = await listarCanjes(db, { empresaId });
+
+  return { empresa, lotes: lotesFilas, canjes };
+}
