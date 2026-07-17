@@ -10,6 +10,8 @@ export type NuevoLote = {
   cantidad: number;
   fechaVencimiento: string; // ISO date YYYY-MM-DD
   creadoPor?: number;
+  /** Complejos (sedes) donde el lote es válido. Vacío/omitido = válido en todas. */
+  sedeIds?: number[];
 };
 
 export async function generarLote(db: DrizzleDb, input: NuevoLote) {
@@ -31,10 +33,10 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
     token: generarToken(),
   }));
 
+  let insertados;
   try {
-    const insertados = await db.insert(boletos).values(filas)
+    insertados = await db.insert(boletos).values(filas)
       .returning({ id: boletos.id, codigo: boletos.codigo, token: boletos.token });
-    return { loteId: lote.id, boletos: insertados };
   } catch (err) {
     // Nota: el driver neon-http (usado en producción) NO soporta
     // db.transaction() (lanza "No transactions support in neon-http driver"),
@@ -44,6 +46,21 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
     await db.delete(lotes).where(eq(lotes.id, lote.id));
     throw err;
   }
+
+  const sedeIds = Array.from(new Set(input.sedeIds ?? []));
+  if (sedeIds.length > 0) {
+    try {
+      await db.insert(loteSedes).values(sedeIds.map((sedeId) => ({ loteId: lote.id, sedeId })));
+    } catch (err) {
+      // Misma lógica de compensación: si falla la asignación de sedes,
+      // revertimos boletos y lote para no dejar huérfanos ni loteSedes sueltos.
+      await db.delete(boletos).where(eq(boletos.loteId, lote.id));
+      await db.delete(lotes).where(eq(lotes.id, lote.id));
+      throw err;
+    }
+  }
+
+  return { loteId: lote.id, boletos: insertados };
 }
 
 export async function anularLote(
