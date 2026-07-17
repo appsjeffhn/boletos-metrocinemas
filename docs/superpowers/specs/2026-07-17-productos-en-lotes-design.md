@@ -107,9 +107,9 @@ Patrón existente respetado: **página server** (carga vía `src/domain/*Query.t
 ### E. Reporte de items
 
 - **Dominio:** `src/domain/reportesProductos.ts`:
-  - `resumenProductos(db, filtro)` → por producto: creados, canjeados, pendientes, monto creado/canjeado/pendiente. `filtro` = { desde?, hasta?, empresaId?, sedeId? } (fecha por `canjeFecha` para canjeados).
-  - `detalleCanjesProductos(db, filtro)` → filas: producto, fecha/hora, sede, empresa, lote, cantidad, precioUnitario, importe, quién canjeó.
-- **UI:** `src/app/(admin)/reportes/productos/page.tsx` con filtros (rango de fechas, empresa, sede) reutilizando el patrón de `reportes/`; tabla resumen + tabla de detalle. Enlace desde la sección de Reportes.
+  - `resumenProductos(db, { empresaId? })` → por producto (agrupado): creados, canjeados, pendientes (unidades = boletos × cantidadPorBoleto) y montos. Números **de por vida** (lifetime); solo se filtran por empresa (a nivel lote). No aplican fecha/sede aquí porque "creados/pendientes" no son eventos de canje y carecen de fecha/sede.
+  - `detalleCanjesProductos(db, filtro)` → filas por canje×producto: producto, fecha/hora, sede, empresa, lote, código, cantidad, precioUnitario, importe, quién canjeó. `filtro` = { desde?, hasta?, empresaId?, sedeId? } (fecha por `canjeFecha`).
+- **UI:** `src/app/(admin)/reportes/productos/page.tsx` con una barra de filtros (rango de fechas, empresa, sede) reutilizando el patrón de `reportes/`; **tabla resumen** (filtra solo por empresa) + **tabla de detalle de canjes** (aplica todos los filtros), con una nota visible de que fecha/sede aplican al detalle. Enlace desde la sección de Reportes.
 - **CSV:** route handler `src/app/(admin)/reportes/productos/exportar/route.ts` (GET con querystring, BOM UTF-8, reutiliza `src/domain/exportar.ts`).
 
 ## Manejo de errores / validaciones
