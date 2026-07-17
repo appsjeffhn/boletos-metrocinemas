@@ -8,11 +8,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, Th, Td } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import type { LoteListado } from "@/domain/lotesQuery";
+import type { ProductoCatalogo } from "@/domain/productosQuery";
+import type { ProductoDeLote } from "@/domain/loteProductosQuery";
 import {
   anularLoteAction,
   crearLoteAction,
   editarLoteAction,
   eliminarLoteAction,
+  editarProductosLoteAction,
   type LoteActionResult,
 } from "./actions";
 
@@ -72,14 +75,120 @@ function SedesSelector({
   );
 }
 
+type FilaProducto = {
+  productoId: number | null; nombre: string; detalle: string; precio: string; cantidad: string;
+};
+
+function nuevaFila(): FilaProducto {
+  return { productoId: null, nombre: "", detalle: "", precio: "", cantidad: "1" };
+}
+
+function ProductosEditor({
+  catalogo,
+  initial,
+  readOnly = false,
+}: {
+  catalogo: ProductoCatalogo[];
+  initial?: ProductoDeLote[];
+  readOnly?: boolean;
+}) {
+  const [filas, setFilas] = useState<FilaProducto[]>(
+    initial && initial.length > 0
+      ? initial.map((p) => ({
+          productoId: p.productoId,
+          nombre: p.nombre,
+          detalle: p.detalle ?? "",
+          precio: p.precioUnitario ?? "",
+          cantidad: String(p.cantidadPorBoleto),
+        }))
+      : [nuevaFila()],
+  );
+
+  function set(i: number, patch: Partial<FilaProducto>) {
+    setFilas((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+
+  function onNombre(i: number, nombre: string) {
+    const match = catalogo.find((c) => c.nombre.toLowerCase() === nombre.trim().toLowerCase());
+    if (match) {
+      set(i, { nombre, productoId: match.id, detalle: match.detalle ?? "", precio: match.precio ?? "" });
+    } else {
+      set(i, { nombre, productoId: null });
+    }
+  }
+
+  if (readOnly) {
+    return (
+      <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-2">
+        <span className="font-semibold text-sm text-[var(--black-100)]">Productos del lote</span>
+        <div className="text-sm p-3 rounded-[var(--radius-sm)]" style={{ background: "var(--warning-10)", color: "var(--warning-150)" }}>
+          El lote tiene canjes: los productos no se pueden modificar.
+        </div>
+        <ul className="text-sm list-disc pl-5">
+          {(initial ?? []).map((p) => (
+            <li key={p.id}>{p.nombre}{p.detalle ? ` · ${p.detalle}` : ""} · ×{p.cantidadPorBoleto} por boleto</li>
+          ))}
+          {(initial ?? []).length === 0 && <li className="list-none text-[var(--black-60)]">Sin productos.</li>}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-2">
+      <span className="font-semibold text-sm text-[var(--black-100)]">Productos del lote</span>
+      <datalist id="catalogo-productos">
+        {catalogo.filter((c) => c.activo).map((c) => <option key={c.id} value={c.nombre} />)}
+      </datalist>
+      {filas.map((f, i) => (
+        <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+          <div className="sm:col-span-4">
+            <Input label={i === 0 ? "Producto" : ""} list="catalogo-productos" name="prodNombre"
+              value={f.nombre} onChange={(e) => onNombre(i, e.target.value)} placeholder="ej. Entrada 3D" />
+            <input type="hidden" name="prodProductoId" value={f.productoId ?? ""} />
+          </div>
+          <div className="sm:col-span-3">
+            <Input label={i === 0 ? "Detalle" : ""} name="prodDetalle" value={f.detalle}
+              onChange={(e) => set(i, { detalle: e.target.value })} placeholder="ej. Sala normal" />
+          </div>
+          <div className="sm:col-span-2">
+            <Input label={i === 0 ? "Precio (L)" : ""} name="prodPrecio" type="number" min="0" step="0.01"
+              value={f.precio} onChange={(e) => set(i, { precio: e.target.value })} placeholder="0.00" />
+          </div>
+          <div className="sm:col-span-2">
+            <Input label={i === 0 ? "Cant./boleto" : ""} name="prodCantidad" type="number" min="1"
+              value={f.cantidad} onChange={(e) => set(i, { cantidad: e.target.value })} />
+          </div>
+          <div className="sm:col-span-1">
+            <Button type="button" variant="secondary" className="text-xs px-2 py-1.5"
+              onClick={() => setFilas((prev) => prev.length === 1 ? [nuevaFila()] : prev.filter((_, idx) => idx !== i))}>
+              ✕
+            </Button>
+          </div>
+        </div>
+      ))}
+      <div>
+        <Button type="button" variant="secondary" className="text-xs px-3 py-1.5"
+          onClick={() => setFilas((prev) => [...prev, nuevaFila()])}>
+          + Agregar producto
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function LotesPanel({
   lotes,
   empresas,
   sedes,
+  catalogo,
+  productosPorLote,
 }: {
   lotes: LoteListado[];
   empresas: Empresa[];
   sedes: Sede[];
+  catalogo: ProductoCatalogo[];
+  productosPorLote: Record<number, ProductoDeLote[]>;
 }) {
   const [crearError, setCrearError] = useState<string | null>(null);
   const [crearKey, setCrearKey] = useState(0);
@@ -139,6 +248,18 @@ export function LotesPanel({
     });
   }
 
+  const [editandoProd, setEditandoProd] = useState<LoteListado | null>(null);
+  const [editarProdError, setEditarProdError] = useState<string | null>(null);
+
+  function onEditarProductos(formData: FormData) {
+    setEditarProdError(null);
+    startTransition(async () => {
+      const r: LoteActionResult = await editarProductosLoteAction(formData);
+      if (r?.error) { setEditarProdError(r.error); return; }
+      setEditandoProd(null);
+    });
+  }
+
   function cerrarEliminar() {
     setEliminando(null);
     setEliminarError(null);
@@ -173,6 +294,7 @@ export function LotesPanel({
           <Input label="Cantidad" name="cantidad" type="number" min="1" placeholder="Cantidad" required />
           <Input label="Vencimiento" name="fechaVencimiento" type="date" required />
           <SedesSelector sedes={sedes} />
+          <ProductosEditor catalogo={catalogo} />
           {crearError && (
             <p className="sm:col-span-2 lg:col-span-5 text-sm text-[var(--error-150)]">{crearError}</p>
           )}
@@ -256,6 +378,14 @@ export function LotesPanel({
                       Editar
                     </Button>
                   )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="text-xs px-3 py-1.5"
+                    onClick={() => { setEditarProdError(null); setEditandoProd(l); }}
+                  >
+                    Productos
+                  </Button>
                   {!l.tieneCanjes && (
                     <Button
                       type="button"
@@ -409,6 +539,36 @@ export function LotesPanel({
               <Button type="submit" variant="danger" disabled={pending}>
                 {pending ? "Eliminando…" : "Eliminar"}
               </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal open={editandoProd !== null} onClose={() => setEditandoProd(null)} title="Productos del lote">
+        {editandoProd && (
+          <form key={editandoProd.id} action={onEditarProductos} className="space-y-3">
+            <input type="hidden" name="loteId" value={editandoProd.id} />
+            <p className="text-sm">
+              Lote <strong>{editandoProd.descripcion}</strong> ({editandoProd.empresa}).
+              Editar productos <strong>no</strong> regenera los QR.
+            </p>
+            <div className="grid grid-cols-1 gap-3">
+              <ProductosEditor
+                catalogo={catalogo}
+                initial={productosPorLote[editandoProd.id] ?? []}
+                readOnly={editandoProd.tieneCanjes}
+              />
+            </div>
+            {editarProdError && <p className="text-sm text-[var(--error-150)]">{editarProdError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={() => setEditandoProd(null)} disabled={pending}>
+                Cerrar
+              </Button>
+              {!editandoProd.tieneCanjes && (
+                <Button type="submit" variant="primary" disabled={pending}>
+                  {pending ? "Guardando…" : "Guardar productos"}
+                </Button>
+              )}
             </div>
           </form>
         )}

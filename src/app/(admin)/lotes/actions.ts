@@ -3,10 +3,40 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { sedes } from "@/db/schema";
-import { anularLote, editarLote, eliminarLote, generarLote } from "@/domain/boletos";
+import {
+  anularLote,
+  editarLote,
+  eliminarLote,
+  generarLote,
+  editarProductosLote,
+  type ProductoLoteInput,
+} from "@/domain/boletos";
 import { getCurrentUser } from "@/lib/session";
 
 export type LoteActionResult = { error?: string } | void;
+
+function productosDesde(formData: FormData): ProductoLoteInput[] {
+  const nombres = formData.getAll("prodNombre").map((v) => String(v));
+  const detalles = formData.getAll("prodDetalle").map((v) => String(v));
+  const precios = formData.getAll("prodPrecio").map((v) => String(v));
+  const cantidades = formData.getAll("prodCantidad").map((v) => String(v));
+  const productoIds = formData.getAll("prodProductoId").map((v) => String(v));
+  const out: ProductoLoteInput[] = [];
+  for (let i = 0; i < nombres.length; i++) {
+    const nombre = (nombres[i] ?? "").trim();
+    if (!nombre) continue; // ignora filas vacías
+    const cantidad = Number(cantidades[i]);
+    const pid = Number(productoIds[i]);
+    out.push({
+      nombre,
+      detalle: (detalles[i] ?? "").trim() || null,
+      precioUnitario: (precios[i] ?? "").trim() || null,
+      cantidadPorBoleto: Number.isInteger(cantidad) && cantidad >= 1 ? cantidad : 1,
+      productoId: Number.isInteger(pid) && pid > 0 ? pid : null,
+    });
+  }
+  return out;
+}
 
 async function sedesSeleccionadas(formData: FormData): Promise<number[]> {
   const todas = formData.get("todas") === "1";
@@ -38,6 +68,7 @@ export async function crearLoteAction(formData: FormData): Promise<LoteActionRes
   if (!fechaVencimiento) return { error: "La fecha de vencimiento es obligatoria." };
 
   const sedeIds = await sedesSeleccionadas(formData);
+  const productos = productosDesde(formData);
 
   const { loteId } = await generarLote(db, {
     empresaId,
@@ -46,6 +77,7 @@ export async function crearLoteAction(formData: FormData): Promise<LoteActionRes
     fechaVencimiento,
     creadoPor: u.userId,
     sedeIds,
+    productos,
   });
   revalidatePath("/lotes");
   redirect(`/lotes/${loteId}/imprimir`);
@@ -110,5 +142,18 @@ export async function eliminarLoteAction(formData: FormData): Promise<LoteAction
     }
     throw err;
   }
+  revalidatePath("/lotes");
+}
+
+export async function editarProductosLoteAction(formData: FormData): Promise<LoteActionResult> {
+  const u = await getCurrentUser();
+  if (!u || !u.puedeAdmin) redirect("/login");
+
+  const loteId = Number(formData.get("loteId"));
+  if (!loteId) return { error: "Lote inválido." };
+
+  const productos = productosDesde(formData);
+  const r = await editarProductosLote(db, loteId, productos);
+  if ("error" in r) return { error: r.error };
   revalidatePath("/lotes");
 }
