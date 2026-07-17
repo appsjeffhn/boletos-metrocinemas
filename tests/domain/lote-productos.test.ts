@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/test/db";
 import { empresas, sedes, usuarios, boletos } from "@/db/schema";
 import { generarLote, editarProductosLote, canjearBoleto } from "@/domain/boletos";
-import { productosDeLote, productosPorToken } from "@/domain/loteProductosQuery";
+import { productosDeLote, productosDeLotes, productosPorToken } from "@/domain/loteProductosQuery";
 
 let close: () => Promise<void>;
 afterEach(() => close?.());
@@ -89,5 +89,26 @@ describe("productos por lote", () => {
     const prods = await productosDeLote(t.db, res.loteId);
     expect(prods).toHaveLength(1);
     expect(prods[0].nombre).toBe("Entrada 2D");
+  });
+
+  it("productosDeLotes agrupa por lote en una sola consulta", async () => {
+    const t = await createTestDb(); close = t.close;
+    const emp = await baseEmpresa(t.db);
+    const l1 = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L1", cantidad: 1, fechaVencimiento: "2099-12-31",
+      productos: [{ nombre: "Entrada 3D", cantidadPorBoleto: 2 }],
+    });
+    const l2 = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L2", cantidad: 1, fechaVencimiento: "2099-12-31",
+      productos: [{ nombre: "Combo", cantidadPorBoleto: 1 }, { nombre: "Entrada 2D", cantidadPorBoleto: 1 }],
+    });
+    const l3 = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L3", cantidad: 1, fechaVencimiento: "2099-12-31",
+    });
+    const map = await productosDeLotes(t.db, [l1.loteId, l2.loteId, l3.loteId]);
+    expect(map[l1.loteId].map((p) => p.nombre)).toEqual(["Entrada 3D"]);
+    expect(map[l2.loteId]).toHaveLength(2);
+    expect(map[l3.loteId]).toEqual([]); // lote sin productos → arreglo vacío
+    expect(await productosDeLotes(t.db, [])).toEqual({});
   });
 });

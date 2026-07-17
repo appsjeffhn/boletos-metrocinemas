@@ -3,7 +3,7 @@ import { sedes as sedesTable } from "@/db/schema";
 import { listarEmpresas } from "@/domain/empresasQuery";
 import { listarLotes } from "@/domain/lotesQuery";
 import { listarProductos } from "@/domain/productosQuery";
-import { productosDeLote } from "@/domain/loteProductosQuery";
+import { productosDeLotes } from "@/domain/loteProductosQuery";
 import { LotesPanel } from "./LotesPanel";
 
 export default async function LotesPage() {
@@ -14,9 +14,7 @@ export default async function LotesPage() {
     listarProductos(db),
   ]);
 
-  const productosPorLote = Object.fromEntries(
-    await Promise.all(lotes.map(async (l) => [l.id, await productosDeLote(db, l.id)] as const)),
-  );
+  const productosPorLote = await productosDeLotes(db, lotes.map((l) => l.id));
 
   return (
     <section className="space-y-6">
