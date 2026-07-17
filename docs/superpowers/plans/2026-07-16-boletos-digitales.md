@@ -296,6 +296,8 @@ async function crearEsquema(db: DrizzleDb) {
       creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`CREATE UNIQUE INDEX boletos_codigo_idx ON boletos(codigo)`);
   await db.execute(sql`CREATE UNIQUE INDEX boletos_token_idx ON boletos(token)`);
+  await db.execute(sql`CREATE INDEX boletos_lote_idx ON boletos(lote_id)`);
+  await db.execute(sql`CREATE INDEX boletos_estado_idx ON boletos(estado)`);
 }
 
 export async function createTestDb() {
