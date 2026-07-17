@@ -2,6 +2,8 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { canjearMultiple, obtenerBoletoPorToken, type ResultadoCanjeMultiple } from "@/domain/boletos";
+import { productosPorToken } from "@/domain/loteProductosQuery";
+import type { ProductoBoleto } from "@/domain/totalizar";
 import { getCurrentUser } from "@/lib/session";
 
 export type CanjeInfo = {
@@ -17,6 +19,7 @@ export type InfoBoleto = {
   codigo: string | null;
   estado: "valido" | "canjeado" | "anulado" | "vencido" | "invalido";
   canje?: CanjeInfo;
+  productos: ProductoBoleto[];
 };
 
 function razonAEstado(razon: string): InfoBoleto["estado"] {
@@ -30,16 +33,19 @@ function razonAEstado(razon: string): InfoBoleto["estado"] {
 // código legible y, si ya fue canjeado, los datos del canje).
 export async function infoBoleto(token: string): Promise<InfoBoleto> {
   const u = await getCurrentUser();
-  if (!u?.puedeTaquilla) return { token, codigo: null, estado: "invalido" };
+  if (!u?.puedeTaquilla) return { token, codigo: null, estado: "invalido", productos: [] };
 
   const r = await obtenerBoletoPorToken(db, token);
-  if (r.ok) return { token, codigo: r.boleto.codigo, estado: "valido" };
+  const prods = await productosPorToken(db, token);
+  const productos: ProductoBoleto[] = prods.map((p) => ({ nombre: p.nombre, cantidadPorBoleto: p.cantidadPorBoleto }));
+  if (r.ok) return { token, codigo: r.boleto.codigo, estado: "valido", productos };
 
   const c = r.boleto?.canje;
   return {
     token,
     codigo: r.boleto?.codigo ?? null,
     estado: razonAEstado(r.razon),
+    productos,
     canje: c
       ? {
           sede: c.sede,

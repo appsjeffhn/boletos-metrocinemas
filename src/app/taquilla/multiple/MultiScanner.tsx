@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { confirmarCanjeMultiple, infoBoleto, type CanjeMultipleState, type CanjeInfo, type InfoBoleto } from "./actions";
+import { totalizarProductos } from "@/domain/totalizar";
 
 const RAZONES: Record<string, string> = {
   invalido: "Boleto inválido o falso",
@@ -81,7 +82,7 @@ export default function MultiScanner() {
         const ultimaVezQuitado = cooldownRef.current.get(token);
         if (ultimaVezQuitado && Date.now() - ultimaVezQuitado < COOLDOWN_MS) return;
 
-        const placeholder: Item = { token, codigo: null, estado: "buscando" };
+        const placeholder: Item = { token, codigo: null, estado: "buscando", productos: [] };
         const nuevos = [...itemsRef.current, placeholder];
         itemsRef.current = nuevos;
         setItems(nuevos);
@@ -142,6 +143,7 @@ export default function MultiScanner() {
   }
 
   const itemPorToken = (token: string) => items.find((it) => it.token === token);
+  const totalizado = totalizarProductos(items.filter((it) => it.estado === "valido"));
 
   if (phase === "results" && result?.resultados) {
     return (
@@ -235,6 +237,20 @@ export default function MultiScanner() {
           </ul>
         )}
       </Card>
+
+      {totalizado.length > 0 && (
+        <Card>
+          <p className="text-sm font-semibold mb-2">Totalizado (boletos válidos)</p>
+          <ul className="space-y-1 text-sm">
+            {totalizado.map((t) => (
+              <li key={t.nombre} className="flex justify-between">
+                <span>{t.nombre}</span>
+                <span className="font-semibold">{t.cantidad}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="space-y-4">
         <Input label="Nombre del portador" value={portadorNombre} onChange={(e) => setPortadorNombre(e.target.value)} required />
