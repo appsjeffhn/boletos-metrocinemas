@@ -63,6 +63,17 @@ export async function eliminarEmpresa(formData: FormData): Promise<EmpresaAction
     return { error: "No se puede eliminar: la empresa tiene lotes activos." };
   }
 
-  await db.delete(empresas).where(eq(empresas.id, id));
+  // Aunque no tenga lotes activos, la empresa puede tener lotes históricos
+  // (canjeados/anulados) que NO se borran para conservar el historial. La FK
+  // de lotes→empresas impide el borrado; capturamos ese caso y damos un mensaje
+  // claro en vez de un error 500.
+  try {
+    await db.delete(empresas).where(eq(empresas.id, id));
+  } catch {
+    return {
+      error:
+        "No se puede eliminar: la empresa tiene lotes en su historial. Se conserva para mantener el registro de canjes.",
+    };
+  }
   revalidatePath("/empresas");
 }
