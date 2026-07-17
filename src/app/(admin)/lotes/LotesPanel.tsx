@@ -9,14 +9,28 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, Th, Td } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import type { LoteListado } from "@/domain/lotesQuery";
-import { anularLoteAction, crearLoteAction, type LoteActionResult } from "./actions";
+import {
+  anularLoteAction,
+  crearLoteAction,
+  editarLoteAction,
+  eliminarLoteAction,
+  type LoteActionResult,
+} from "./actions";
 
 type Empresa = { id: number; nombre: string };
 type Sede = { id: number; nombre: string };
 
-function SedesSelector({ sedes }: { sedes: Sede[] }) {
-  const [todas, setTodas] = useState(true);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+function SedesSelector({
+  sedes,
+  initialTodas = true,
+  initialSelectedIds = [],
+}: {
+  sedes: Sede[];
+  initialTodas?: boolean;
+  initialSelectedIds?: number[];
+}) {
+  const [todas, setTodas] = useState(initialTodas);
+  const [selected, setSelected] = useState<Set<number>>(new Set(initialSelectedIds));
 
   return (
     <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-5">
@@ -73,6 +87,10 @@ export function LotesPanel({
   const [anulando, setAnulando] = useState<LoteListado | null>(null);
   const [anularError, setAnularError] = useState<string | null>(null);
   const [motivo, setMotivo] = useState("");
+  const [editando, setEditando] = useState<LoteListado | null>(null);
+  const [editarError, setEditarError] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<LoteListado | null>(null);
+  const [eliminarError, setEliminarError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onCrear(formData: FormData) {
@@ -102,6 +120,40 @@ export function LotesPanel({
         return;
       }
       cerrarAnular();
+    });
+  }
+
+  function cerrarEditar() {
+    setEditando(null);
+    setEditarError(null);
+  }
+
+  function onEditar(formData: FormData) {
+    setEditarError(null);
+    startTransition(async () => {
+      const resultado: LoteActionResult = await editarLoteAction(formData);
+      if (resultado?.error) {
+        setEditarError(resultado.error);
+        return;
+      }
+      cerrarEditar();
+    });
+  }
+
+  function cerrarEliminar() {
+    setEliminando(null);
+    setEliminarError(null);
+  }
+
+  function onEliminar(formData: FormData) {
+    setEliminarError(null);
+    startTransition(async () => {
+      const resultado: LoteActionResult = await eliminarLoteAction(formData);
+      if (resultado?.error) {
+        setEliminarError(resultado.error);
+        return;
+      }
+      cerrarEliminar();
     });
   }
 
@@ -192,6 +244,32 @@ export function LotesPanel({
                   <a className="btn btn-secondary text-xs px-3 py-1.5" href={`/api/lote/${l.id}/qr-zip`}>
                     Descargar QR (ZIP)
                   </a>
+                  {!l.anulado && !l.tieneCanjes && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="text-xs px-3 py-1.5"
+                      onClick={() => {
+                        setEditarError(null);
+                        setEditando(l);
+                      }}
+                    >
+                      Editar
+                    </Button>
+                  )}
+                  {!l.tieneCanjes && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      className="text-xs px-3 py-1.5"
+                      onClick={() => {
+                        setEliminarError(null);
+                        setEliminando(l);
+                      }}
+                    >
+                      Eliminar
+                    </Button>
+                  )}
                   {!l.anulado && (
                     <Button
                       type="button"
@@ -204,6 +282,11 @@ export function LotesPanel({
                     >
                       Anular
                     </Button>
+                  )}
+                  {l.tieneCanjes && (
+                    <span className="text-xs text-[var(--black-60)] self-center">
+                      Tiene canjes: no editable/eliminable
+                    </span>
                   )}
                 </div>
               </Td>
@@ -245,6 +328,87 @@ export function LotesPanel({
               </Button>
               <Button type="submit" variant="danger" disabled={pending || motivo.trim().length === 0}>
                 {pending ? "Anulando…" : "Anular lote"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal open={editando !== null} onClose={cerrarEditar} title="Editar lote">
+        {editando && (
+          <form key={editando.id} action={onEditar} className="space-y-3">
+            <input type="hidden" name="loteId" value={editando.id} />
+            <div
+              className="text-sm p-3 rounded-[var(--radius-sm)]"
+              style={{ background: "var(--warning-10)", color: "var(--warning-150)" }}
+            >
+              ⚠️ Al guardar, se regeneran los boletos: los QR generados anteriormente quedarán{" "}
+              <strong>INVÁLIDOS</strong> y deberás reimprimir/redistribuir. Solo se puede editar un
+              lote sin canjes.
+            </div>
+            <Input
+              label="Descripción"
+              name="descripcion"
+              defaultValue={editando.descripcion}
+              required
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Cantidad"
+                name="cantidad"
+                type="number"
+                min="1"
+                defaultValue={editando.cantidad}
+                required
+              />
+              <Input
+                label="Vencimiento"
+                name="fechaVencimiento"
+                type="date"
+                defaultValue={editando.fechaVencimiento}
+                required
+              />
+            </div>
+            <SedesSelector
+              sedes={sedes}
+              initialTodas={editando.sedeIds.length === 0}
+              initialSelectedIds={editando.sedeIds}
+            />
+            {editarError && <p className="text-sm text-[var(--error-150)]">{editarError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={cerrarEditar} disabled={pending}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" disabled={pending}>
+                {pending ? "Guardando…" : "Guardar cambios"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal open={eliminando !== null} onClose={cerrarEliminar} title="Eliminar lote">
+        {eliminando && (
+          <form action={onEliminar} className="space-y-3">
+            <input type="hidden" name="loteId" value={eliminando.id} />
+            <p className="text-sm">
+              Lote <strong>{eliminando.descripcion}</strong> ({eliminando.empresa}) —{" "}
+              {eliminando.cantidad} boletos.
+            </p>
+            <div
+              className="text-sm p-3 rounded-[var(--radius-sm)]"
+              style={{ background: "var(--error-10)", color: "var(--error-150)" }}
+            >
+              ¿Eliminar este lote? Se borrarán sus boletos. Esta acción no se puede deshacer. Solo
+              se permite si el lote no tiene canjes.
+            </div>
+            {eliminarError && <p className="text-sm text-[var(--error-150)]">{eliminarError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={cerrarEliminar} disabled={pending}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="danger" disabled={pending}>
+                {pending ? "Eliminando…" : "Eliminar"}
               </Button>
             </div>
           </form>

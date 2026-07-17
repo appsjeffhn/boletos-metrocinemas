@@ -12,6 +12,8 @@ export type LoteListado = {
   anulado: boolean;
   anuladoMotivo: string | null;
   sedes: string[];
+  /** IDs de las sedes asignadas al lote (vacío = válido en todas). */
+  sedeIds: number[];
   /** true si el lote tiene al menos un boleto canjeado (bloquea editar/eliminar). */
   tieneCanjes: boolean;
 };
@@ -22,7 +24,7 @@ export async function listarLotes(db: DrizzleDb): Promise<LoteListado[]> {
       id: lotes.id, empresa: empresas.nombre, descripcion: lotes.descripcion,
       cantidad: lotes.cantidad, fechaVencimiento: lotes.fechaVencimiento, creadoEn: lotes.creadoEn,
       anuladoEn: lotes.anuladoEn, anuladoMotivo: lotes.anuladoMotivo,
-      sede: sedes.nombre,
+      sede: sedes.nombre, sedeId: sedes.id,
     })
     .from(lotes)
     .innerJoin(empresas, eq(lotes.empresaId, empresas.id))
@@ -46,12 +48,13 @@ export async function listarLotes(db: DrizzleDb): Promise<LoteListado[]> {
       l = {
         id: fila.id, empresa: fila.empresa, descripcion: fila.descripcion,
         cantidad: fila.cantidad, fechaVencimiento: fila.fechaVencimiento, creadoEn: fila.creadoEn,
-        anulado: fila.anuladoEn !== null, anuladoMotivo: fila.anuladoMotivo, sedes: [],
+        anulado: fila.anuladoEn !== null, anuladoMotivo: fila.anuladoMotivo, sedes: [], sedeIds: [],
         tieneCanjes: lotesConCanjes.has(fila.id),
       };
       porLote.set(fila.id, l);
     }
     if (fila.sede) l.sedes.push(fila.sede);
+    if (fila.sedeId) l.sedeIds.push(fila.sedeId);
   }
   return Array.from(porLote.values());
 }

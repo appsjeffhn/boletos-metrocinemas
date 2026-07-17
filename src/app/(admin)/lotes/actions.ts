@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { sedes } from "@/db/schema";
-import { anularLote, generarLote } from "@/domain/boletos";
+import { anularLote, editarLote, eliminarLote, generarLote } from "@/domain/boletos";
 import { getCurrentUser } from "@/lib/session";
 
 export type LoteActionResult = { error?: string } | void;
@@ -62,5 +62,53 @@ export async function anularLoteAction(formData: FormData): Promise<LoteActionRe
   if (!motivo) return { error: "El motivo de anulación es obligatorio." };
 
   await anularLote(db, loteId, { motivo, usuarioId: u.userId });
+  revalidatePath("/lotes");
+}
+
+export async function editarLoteAction(formData: FormData): Promise<LoteActionResult> {
+  const u = await getCurrentUser();
+  if (!u || !u.puedeAdmin) redirect("/login");
+
+  const loteId = Number(formData.get("loteId"));
+  const descripcion = String(formData.get("descripcion") ?? "").trim();
+  const cantidad = Number(formData.get("cantidad"));
+  const fechaVencimiento = String(formData.get("fechaVencimiento") ?? "");
+
+  if (!loteId) return { error: "Lote inválido." };
+  if (!descripcion) return { error: "La descripción es obligatoria." };
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    return { error: "La cantidad debe ser un entero mayor o igual a 1." };
+  }
+  if (!fechaVencimiento) return { error: "La fecha de vencimiento es obligatoria." };
+
+  const sedeIds = await sedesSeleccionadas(formData);
+
+  try {
+    await editarLote(db, loteId, { descripcion, fechaVencimiento, cantidad, sedeIds });
+  } catch (err) {
+    if (err instanceof Error && err.message === "No se puede editar un lote con canjes") {
+      return { error: "No se puede editar: el lote ya tiene canjes." };
+    }
+    throw err;
+  }
+  revalidatePath("/lotes");
+  redirect(`/lotes/${loteId}/imprimir`);
+}
+
+export async function eliminarLoteAction(formData: FormData): Promise<LoteActionResult> {
+  const u = await getCurrentUser();
+  if (!u || !u.puedeAdmin) redirect("/login");
+
+  const loteId = Number(formData.get("loteId"));
+  if (!loteId) return { error: "Lote inválido." };
+
+  try {
+    await eliminarLote(db, loteId);
+  } catch (err) {
+    if (err instanceof Error && err.message === "No se puede eliminar un lote con canjes") {
+      return { error: "No se puede eliminar: el lote ya tiene canjes. Usa Anular." };
+    }
+    throw err;
+  }
   revalidatePath("/lotes");
 }
