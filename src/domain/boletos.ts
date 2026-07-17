@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { DrizzleDb } from "@/db/client";
-import { lotes, boletos, empresas, sedes, usuarios, loteSedes } from "@/db/schema";
+import { lotes, boletos, empresas, sedes, usuarios, loteSedes, loteProductos } from "@/db/schema";
 import { generarCodigo, generarToken } from "@/lib/codigo";
 
 export type NuevoLote = {
@@ -12,7 +12,29 @@ export type NuevoLote = {
   creadoPor?: number;
   /** Complejos (sedes) donde el lote es válido. Vacío/omitido = válido en todas. */
   sedeIds?: number[];
+  /** Productos que aplican al lote (modelo bundle: cada boleto vale por todos). */
+  productos?: ProductoLoteInput[];
 };
+
+export type ProductoLoteInput = {
+  productoId?: number | null;
+  nombre: string;
+  detalle?: string | null;
+  precioUnitario?: string | null;
+  cantidadPorBoleto: number;
+};
+
+function filasLoteProductos(loteId: number, productos: ProductoLoteInput[]) {
+  return productos.map((p, i) => ({
+    loteId,
+    productoId: p.productoId ?? null,
+    nombre: p.nombre.trim(),
+    detalle: p.detalle?.trim() || null,
+    precioUnitario: p.precioUnitario ?? null,
+    cantidadPorBoleto: p.cantidadPorBoleto,
+    orden: i,
+  }));
+}
 
 export async function generarLote(db: DrizzleDb, input: NuevoLote) {
   const [emp] = await db.select({ prefijo: empresas.prefijo })
@@ -60,6 +82,19 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
     }
   }
 
+  const prods = input.productos ?? [];
+  if (prods.length > 0) {
+    try {
+      await db.insert(loteProductos).values(filasLoteProductos(lote.id, prods));
+    } catch (err) {
+      // Compensación (neon-http sin transacciones): revertir sedes, boletos y lote.
+      await db.delete(loteSedes).where(eq(loteSedes.loteId, lote.id));
+      await db.delete(boletos).where(eq(boletos.loteId, lote.id));
+      await db.delete(lotes).where(eq(lotes.id, lote.id));
+      throw err;
+    }
+  }
+
   return { loteId: lote.id, boletos: insertados };
 }
 
@@ -69,6 +104,21 @@ export async function loteTieneCanjes(db: DrizzleDb, loteId: number): Promise<bo
     .where(and(eq(boletos.loteId, loteId), eq(boletos.estado, "canjeado")))
     .limit(1);
   return !!row;
+}
+
+export async function editarProductosLote(
+  db: DrizzleDb,
+  loteId: number,
+  productos: ProductoLoteInput[],
+): Promise<{ ok: true } | { error: string }> {
+  if (await loteTieneCanjes(db, loteId)) {
+    return { error: "No se puede editar productos de un lote con canjes." };
+  }
+  await db.delete(loteProductos).where(eq(loteProductos.loteId, loteId));
+  if (productos.length > 0) {
+    await db.insert(loteProductos).values(filasLoteProductos(loteId, productos));
+  }
+  return { ok: true };
 }
 
 export type EditarLoteInput = {
