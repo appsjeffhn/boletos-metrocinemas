@@ -148,6 +148,14 @@ h1 {
 .btn-tertiary:hover:not(:disabled) {
   background: var(--blue-20);
 }
+.btn-gold {
+  background: var(--blue-100);
+  color: var(--coral-100);
+}
+.btn-gold:hover:not(:disabled) {
+  background: var(--blue-hover);
+  color: #fff;
+}
 .btn-danger {
   background: var(--error-150);
   color: #fff;

@@ -56,7 +56,7 @@ export default async function TaquillaPage() {
         </div>
 
         {/* Escaneo múltiple arriba */}
-        <Link href="/taquilla/multiple" className="btn btn-secondary w-full">
+        <Link href="/taquilla/multiple" className="btn btn-gold w-full">
           Escaneo múltiple
         </Link>
 

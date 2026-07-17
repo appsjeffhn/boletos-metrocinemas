@@ -1,8 +1,56 @@
 "use server";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
-import { canjearMultiple, type ResultadoCanjeMultiple } from "@/domain/boletos";
+import { canjearMultiple, obtenerBoletoPorToken, type ResultadoCanjeMultiple } from "@/domain/boletos";
 import { getCurrentUser } from "@/lib/session";
+
+export type CanjeInfo = {
+  sede: string | null;
+  operador: string | null;
+  portadorNombre: string | null;
+  portadorDni: string | null;
+  fecha: string | null;
+};
+
+export type InfoBoleto = {
+  token: string;
+  codigo: string | null;
+  estado: "valido" | "canjeado" | "anulado" | "vencido" | "invalido";
+  canje?: CanjeInfo;
+};
+
+function razonAEstado(razon: string): InfoBoleto["estado"] {
+  if (razon === "canjeado") return "canjeado";
+  if (razon === "anulado") return "anulado";
+  if (razon === "vencido") return "vencido";
+  return "invalido";
+}
+
+// Consulta el estado y los datos de un boleto por su token (para mostrar el
+// código legible y, si ya fue canjeado, los datos del canje).
+export async function infoBoleto(token: string): Promise<InfoBoleto> {
+  const u = await getCurrentUser();
+  if (!u?.puedeTaquilla) return { token, codigo: null, estado: "invalido" };
+
+  const r = await obtenerBoletoPorToken(db, token);
+  if (r.ok) return { token, codigo: r.boleto.codigo, estado: "valido" };
+
+  const c = r.boleto?.canje;
+  return {
+    token,
+    codigo: r.boleto?.codigo ?? null,
+    estado: razonAEstado(r.razon),
+    canje: c
+      ? {
+          sede: c.sede,
+          operador: c.operador,
+          portadorNombre: c.portadorNombre,
+          portadorDni: c.portadorDni,
+          fecha: c.fecha ? new Date(c.fecha).toISOString() : null,
+        }
+      : undefined,
+  };
+}
 
 export type CanjeMultipleState = {
   error?: string;
