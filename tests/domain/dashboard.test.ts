@@ -53,8 +53,9 @@ describe("dashboardKpis", () => {
     expect(kpis.lotesActivos).toBe(1);
 
     const total = lote1.boletos.length + lote2.boletos.length + lote3.boletos.length;
-    expect(kpis.boletosEmitidos).toBe(total);
-    expect(kpis.boletosCanjeados + kpis.boletosPendientes + kpis.boletosAnulados).toBe(total);
+    // boletosEmitidos excluye anulados: emitidos = canjeados + pendientes.
+    expect(kpis.boletosEmitidos).toBe(total - 2); // total menos los 2 anulados de lote3
+    expect(kpis.boletosCanjeados + kpis.boletosPendientes).toBe(kpis.boletosEmitidos);
     expect(kpis.boletosCanjeados).toBe(2 + 3); // lote1 (2) + lote2 (3)
     expect(kpis.boletosPendientes).toBe(3); // resto de lote1
     expect(kpis.boletosAnulados).toBe(2); // lote3
@@ -77,6 +78,13 @@ describe("dashboardKpis", () => {
       expect(anterior && actual ? anterior >= actual : true).toBe(true);
     }
     expect(kpis.ultimosCanjes.every((c) => c.empresa === "Coca-Cola")).toBe(true);
+
+    // clientesActivos: Coca-Cola tiene boletos no-anulados (lote1 + lote2).
+    // lote3 quedó 100% anulado y no debe hacer que la fila desaparezca (Coca-Cola
+    // sigue teniendo actividad por lote1/lote2), pero sus boletos no suman aquí.
+    expect(kpis.clientesActivos).toEqual([
+      { empresa: "Coca-Cola", pendientes: 3, canjeados: 5 },
+    ]);
   });
 
   it("respeta el límite de 10 en ultimosCanjes", async () => {
@@ -104,7 +112,22 @@ describe("dashboardKpis", () => {
     expect(kpis).toMatchObject({
       empresas: 0, lotesActivos: 0, boletosEmitidos: 0, boletosCanjeados: 0,
       boletosPendientes: 0, boletosAnulados: 0, canjesHoy: 0,
-      canjesPorSede: [], ultimosCanjes: [],
+      canjesPorSede: [], ultimosCanjes: [], clientesActivos: [],
     });
+  });
+
+  it("clientesActivos omite empresas cuyo único lote quedó 100% anulado", async () => {
+    const t = await createTestDb(); close = t.close;
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Solo Anulada", prefijo: "SA" }).returning();
+    const [u] = await t.db.insert(usuarios).values({
+      usuario: "taq2", passwordHash: "x", puedeTaquilla: true,
+    }).returning();
+    const lote = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L", cantidad: 2, fechaVencimiento: "2099-12-31",
+    });
+    await anularLote(t.db, lote.loteId, { motivo: "cancelado", usuarioId: u.id });
+
+    const kpis = await dashboardKpis(t.db);
+    expect(kpis.clientesActivos.find((c) => c.empresa === "Solo Anulada")).toBeUndefined();
   });
 });

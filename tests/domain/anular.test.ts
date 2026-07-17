@@ -43,7 +43,8 @@ describe("anularLote", () => {
 
     const reporte = await reportePorEmpresa(t.db);
     const fila = reporte.find((f) => f.empresaId === emp.id);
-    expect(fila).toMatchObject({ canjeados: 1, anulados: 2, pendientes: 0, emitidos: 3 });
+    // emitidos excluye anulados: emitidos = canjeados + pendientes = 1 + 0.
+    expect(fila).toMatchObject({ canjeados: 1, anulados: 2, pendientes: 0, emitidos: 1 });
   });
 
   it("lanza si el motivo está vacío o solo espacios", async () => {

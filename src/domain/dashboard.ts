@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import type { DrizzleDb } from "@/db/client";
 import { boletos, empresas, lotes, sedes } from "@/db/schema";
 
@@ -28,6 +28,7 @@ export type DashboardKpis = {
     portadorNombre: string | null;
     fecha: Date | null;
   }[];
+  clientesActivos: { empresa: string; pendientes: number; canjeados: number }[];
 };
 
 export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
@@ -43,7 +44,8 @@ export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
 
   const [conteos] = await db
     .select({
-      emitidos: sql<number>`count(*)::int`,
+      // emitidos excluye anulados: emitidos = canjeados + pendientes.
+      emitidos: sql<number>`count(*) filter (where ${boletos.estado} != 'anulado')::int`,
       canjeados: sql<number>`count(*) filter (where ${boletos.estado} = 'canjeado')::int`,
       pendientes: sql<number>`count(*) filter (where ${boletos.estado} = 'activo')::int`,
       anulados: sql<number>`count(*) filter (where ${boletos.estado} = 'anulado')::int`,
@@ -83,6 +85,22 @@ export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
     .orderBy(desc(boletos.canjeFecha))
     .limit(10);
 
+  // Por empresa: pendientes/canjeados entre los boletos no-anulados. El where
+  // filtra las filas antes de agrupar, así que una empresa sin ningún boleto
+  // no-anulado simplemente no produce fila (no aparece con ceros).
+  const clientesActivos = await db
+    .select({
+      empresa: empresas.nombre,
+      pendientes: sql<number>`count(*) filter (where ${boletos.estado} = 'activo')::int`,
+      canjeados: sql<number>`count(*) filter (where ${boletos.estado} = 'canjeado')::int`,
+    })
+    .from(boletos)
+    .innerJoin(lotes, eq(boletos.loteId, lotes.id))
+    .innerJoin(empresas, eq(lotes.empresaId, empresas.id))
+    .where(ne(boletos.estado, "anulado"))
+    .groupBy(empresas.nombre)
+    .orderBy(empresas.nombre);
+
   return {
     empresas: totalEmpresas,
     lotesActivos,
@@ -93,5 +111,6 @@ export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
     canjesHoy,
     canjesPorSede,
     ultimosCanjes,
+    clientesActivos,
   };
 }

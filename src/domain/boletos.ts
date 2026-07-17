@@ -63,6 +63,75 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
   return { loteId: lote.id, boletos: insertados };
 }
 
+export async function loteTieneCanjes(db: DrizzleDb, loteId: number): Promise<boolean> {
+  const [row] = await db.select({ id: boletos.id })
+    .from(boletos)
+    .where(and(eq(boletos.loteId, loteId), eq(boletos.estado, "canjeado")))
+    .limit(1);
+  return !!row;
+}
+
+export type EditarLoteInput = {
+  descripcion: string;
+  fechaVencimiento: string; // ISO date YYYY-MM-DD
+  cantidad: number;
+  /** Complejos (sedes) donde el lote es válido. Vacío/omitido = válido en todas. */
+  sedeIds?: number[];
+};
+
+/**
+ * Edita un lote sin canjes: actualiza descripcion/fechaVencimiento/sedes y
+ * REGENERA todos sus boletos (nuevos códigos y tokens). Esto invalida
+ * cualquier QR ya impreso/entregado del lote; la UI debe advertir al usuario.
+ */
+export async function editarLote(db: DrizzleDb, loteId: number, input: EditarLoteInput) {
+  if (await loteTieneCanjes(db, loteId)) {
+    throw new Error("No se puede editar un lote con canjes");
+  }
+
+  const [lote] = await db.select({ empresaId: lotes.empresaId })
+    .from(lotes).where(eq(lotes.id, loteId));
+  if (!lote) throw new Error("Lote no encontrado");
+  const [emp] = await db.select({ prefijo: empresas.prefijo })
+    .from(empresas).where(eq(empresas.id, lote.empresaId));
+  if (!emp) throw new Error("Empresa no encontrada");
+
+  await db.update(lotes)
+    .set({
+      descripcion: input.descripcion,
+      fechaVencimiento: input.fechaVencimiento,
+      cantidad: input.cantidad,
+    })
+    .where(eq(lotes.id, loteId));
+
+  await db.delete(loteSedes).where(eq(loteSedes.loteId, loteId));
+  const sedeIds = Array.from(new Set(input.sedeIds ?? []));
+  if (sedeIds.length > 0) {
+    await db.insert(loteSedes).values(sedeIds.map((sedeId) => ({ loteId, sedeId })));
+  }
+
+  await db.delete(boletos).where(eq(boletos.loteId, loteId));
+  const filas = Array.from({ length: input.cantidad }, () => ({
+    loteId,
+    codigo: generarCodigo(emp.prefijo),
+    token: generarToken(),
+  }));
+  const insertados = await db.insert(boletos).values(filas)
+    .returning({ id: boletos.id, codigo: boletos.codigo, token: boletos.token });
+
+  return { loteId, boletos: insertados };
+}
+
+export async function eliminarLote(db: DrizzleDb, loteId: number): Promise<{ ok: true }> {
+  if (await loteTieneCanjes(db, loteId)) {
+    throw new Error("No se puede eliminar un lote con canjes");
+  }
+  await db.delete(loteSedes).where(eq(loteSedes.loteId, loteId));
+  await db.delete(boletos).where(eq(boletos.loteId, loteId));
+  await db.delete(lotes).where(eq(lotes.id, loteId));
+  return { ok: true };
+}
+
 export async function anularLote(
   db: DrizzleDb,
   loteId: number,
@@ -178,4 +247,37 @@ export async function canjearBoleto(db: DrizzleDb, token: string, datos: DatosCa
 
   if (actualizado.length === 0) return { ok: false as const, razon: "canjeado" as Razon };
   return { ok: true as const, codigo: actualizado[0].codigo };
+}
+
+export type ResultadoCanjeMultiple = {
+  token: string;
+  codigo?: string;
+  ok: boolean;
+  razon?: Razon;
+};
+
+/** Canjea varios tokens con los mismos datos (sede/usuario/portador). Deduplica tokens y preserva el orden. */
+export async function canjearMultiple(
+  db: DrizzleDb,
+  tokens: string[],
+  datos: DatosCanje,
+  hoy = hoyISO(),
+): Promise<{ resultados: ResultadoCanjeMultiple[]; exitosos: number; fallidos: number }> {
+  const unicos = Array.from(new Set(tokens));
+  const resultados: ResultadoCanjeMultiple[] = [];
+  let exitosos = 0;
+  let fallidos = 0;
+
+  for (const token of unicos) {
+    const r = await canjearBoleto(db, token, datos, hoy);
+    if (r.ok) {
+      resultados.push({ token, codigo: r.codigo, ok: true });
+      exitosos++;
+    } else {
+      resultados.push({ token, ok: false, razon: r.razon });
+      fallidos++;
+    }
+  }
+
+  return { resultados, exitosos, fallidos };
 }

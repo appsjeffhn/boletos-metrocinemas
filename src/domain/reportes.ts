@@ -11,7 +11,8 @@ export async function reportePorEmpresa(db: DrizzleDb): Promise<ReporteEmpresa[]
   const rows = await db
     .select({
       empresaId: empresas.id, empresa: empresas.nombre,
-      emitidos: sql<number>`count(${boletos.id})::int`,
+      // emitidos excluye anulados: emitidos = canjeados + pendientes.
+      emitidos: sql<number>`count(*) filter (where ${boletos.estado} != 'anulado')::int`,
       canjeados: sql<number>`count(*) filter (where ${boletos.estado} = 'canjeado')::int`,
       pendientes: sql<number>`count(*) filter (where ${boletos.estado} = 'activo')::int`,
       anulados: sql<number>`count(*) filter (where ${boletos.estado} = 'anulado')::int`,
@@ -75,7 +76,8 @@ export async function detalleEmpresa(db: DrizzleDb, empresaId: number): Promise<
   const lotesFilas = await db
     .select({
       id: lotes.id, descripcion: lotes.descripcion, cantidad: lotes.cantidad,
-      emitidos: sql<number>`count(${boletos.id})::int`,
+      // emitidos excluye anulados: emitidos = canjeados + pendientes.
+      emitidos: sql<number>`count(*) filter (where ${boletos.estado} != 'anulado')::int`,
       canjeados: sql<number>`count(*) filter (where ${boletos.estado} = 'canjeado')::int`,
       pendientes: sql<number>`count(*) filter (where ${boletos.estado} = 'activo')::int`,
       anulado: sql<boolean>`(${lotes.anuladoEn} is not null)`,
