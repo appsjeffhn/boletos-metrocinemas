@@ -58,6 +58,25 @@ describe("canjearBoleto", () => {
     expect(primero.ok).toBe(true);
     expect(segundo).toMatchObject({ ok: false, razon: "canjeado" });
   });
+  it("no permite doble canje concurrente (guardia atomica)", async () => {
+    const { t, sede, user, token } = await setup();
+    const [r1, r2] = await Promise.all([
+      canjearBoleto(t.db, token, datos(sede.id, user.id), "2026-07-16"),
+      canjearBoleto(t.db, token, datos(sede.id, user.id), "2026-07-16"),
+    ]);
+    const resultados = [r1, r2];
+    const exitosos = resultados.filter((r) => r.ok === true);
+    const fallidos = resultados.filter((r) => r.ok === false);
+    expect(exitosos.length).toBe(1);
+    expect(fallidos.length).toBe(1);
+    expect(fallidos[0]).toMatchObject({ ok: false, razon: "canjeado" });
+
+    const filas = await t.db.select().from(boletos).where(eq(boletos.token, token));
+    expect(filas.length).toBe(1);
+    expect(filas[0].estado).toBe("canjeado");
+    const canjeados = filas.filter((b) => b.estado === "canjeado");
+    expect(canjeados.length).toBe(1);
+  });
   it("rechaza boleto vencido", async () => {
     const { t, sede, user, token } = await setup("2026-01-01");
     const r = await canjearBoleto(t.db, token, datos(sede.id, user.id), "2026-07-16");
