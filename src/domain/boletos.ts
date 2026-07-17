@@ -30,14 +30,33 @@ export async function generarLote(db: DrizzleDb, input: NuevoLote) {
     token: generarToken(),
   }));
 
-  const insertados = await db.insert(boletos).values(filas)
-    .returning({ id: boletos.id, codigo: boletos.codigo, token: boletos.token });
+  try {
+    const insertados = await db.insert(boletos).values(filas)
+      .returning({ id: boletos.id, codigo: boletos.codigo, token: boletos.token });
+    return { loteId: lote.id, boletos: insertados };
+  } catch (err) {
+    // Nota: el driver neon-http (usado en producción) NO soporta
+    // db.transaction() (lanza "No transactions support in neon-http driver"),
+    // así que no podemos envolver ambos inserts en una transacción real.
+    // Compensamos manualmente: si falla la inserción de boletos, eliminamos
+    // el lote recién creado para no dejarlo huérfano.
+    await db.delete(lotes).where(eq(lotes.id, lote.id));
+    throw err;
+  }
+}
 
-  return { loteId: lote.id, boletos: insertados };
+export async function anularLote(db: DrizzleDb, loteId: number): Promise<{ anulados: number }> {
+  const actualizados = await db.update(boletos)
+    .set({ estado: "anulado" })
+    .where(and(eq(boletos.loteId, loteId), eq(boletos.estado, "activo")))
+    .returning({ id: boletos.id });
+  return { anulados: actualizados.length };
 }
 
 function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  // Fecha calendario en Honduras (UTC-6), no UTC: usar UTC podía marcar un
+  // boleto como vencido hasta 6h antes de tiempo el día de su vencimiento.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Tegucigalpa" }).format(new Date());
 }
 
 export type BoletoInfo = {

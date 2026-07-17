@@ -39,6 +39,11 @@ describe("obtenerBoletoPorToken", () => {
     const r = await obtenerBoletoPorToken(t.db, token, "2026-07-16");
     expect(r).toMatchObject({ ok: false, razon: "vencido" });
   });
+  it("activo y no vencido usando la fecha por defecto (hoy) → ok", async () => {
+    const { t, token } = await setup("2099-12-31");
+    const r = await obtenerBoletoPorToken(t.db, token);
+    expect(r.ok).toBe(true);
+  });
 });
 
 describe("canjearBoleto", () => {

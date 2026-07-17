@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/test/db";
-import { empresas, boletos } from "@/db/schema";
+import { empresas, boletos, lotes } from "@/db/schema";
 import { generarLote } from "@/domain/boletos";
 
 let close: () => Promise<void>;
@@ -23,5 +23,19 @@ describe("generarLote", () => {
     const enDb = await t.db.select().from(boletos);
     expect(enDb).toHaveLength(50);
     expect(enDb.every((b) => b.estado === "activo")).toBe(true);
+  });
+
+  it("si falla la inserción de boletos, revierte (borra) el lote recién creado", async () => {
+    const t = await createTestDb(); close = t.close;
+    const [emp] = await t.db.insert(empresas).values({ nombre: "Pepsi", prefijo: "PP" }).returning();
+    // cantidad: 0 hace que values([]) del insert de boletos lance sincrónicamente,
+    // ejerciendo la rama de compensación (delete del lote) en generarLote.
+    await expect(generarLote(t.db, {
+      empresaId: emp.id, descripcion: "Cortesías", cantidad: 0,
+      fechaVencimiento: "2026-12-31",
+    })).rejects.toThrow();
+
+    const lotesEnDb = await t.db.select().from(lotes);
+    expect(lotesEnDb).toHaveLength(0);
   });
 });
