@@ -114,9 +114,22 @@ export async function editarProductosLote(
   if (await loteTieneCanjes(db, loteId)) {
     return { error: "No se puede editar productos de un lote con canjes." };
   }
+  const previos = await db.select().from(loteProductos).where(eq(loteProductos.loteId, loteId));
   await db.delete(loteProductos).where(eq(loteProductos.loteId, loteId));
   if (productos.length > 0) {
-    await db.insert(loteProductos).values(filasLoteProductos(loteId, productos));
+    try {
+      await db.insert(loteProductos).values(filasLoteProductos(loteId, productos));
+    } catch (err) {
+      // Compensación (neon-http sin transacciones): si el insert falla, el lote
+      // quedaría sin productos; restauramos los previos antes de propagar el error.
+      await db.delete(loteProductos).where(eq(loteProductos.loteId, loteId));
+      if (previos.length > 0) {
+        await db.insert(loteProductos).values(
+          previos.map(({ id, creadoEn, ...rest }) => rest),
+        );
+      }
+      throw err;
+    }
   }
   return { ok: true };
 }

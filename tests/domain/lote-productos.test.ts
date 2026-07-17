@@ -74,4 +74,20 @@ describe("productos por lote", () => {
     const bs = await t.db.select().from(boletos);
     expect(bs).toHaveLength(2);
   });
+
+  it("editarProductosLote restaura los productos previos si el insert falla (compensación)", async () => {
+    const t = await createTestDb(); close = t.close;
+    const emp = await baseEmpresa(t.db);
+    const res = await generarLote(t.db, {
+      empresaId: emp.id, descripcion: "L", cantidad: 2, fechaVencimiento: "2099-12-31",
+      productos: [{ nombre: "Entrada 2D", cantidadPorBoleto: 1 }],
+    });
+    // productoId inexistente => viola la FK => el insert lanza => se restauran los previos
+    await expect(
+      editarProductosLote(t.db, res.loteId, [{ productoId: 999999, nombre: "X", cantidadPorBoleto: 1 }]),
+    ).rejects.toThrow();
+    const prods = await productosDeLote(t.db, res.loteId);
+    expect(prods).toHaveLength(1);
+    expect(prods[0].nombre).toBe("Entrada 2D");
+  });
 });
