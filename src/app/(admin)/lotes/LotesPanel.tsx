@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -104,6 +104,8 @@ function ProductosEditor({
       : [nuevaFila()],
   );
 
+  const datalistId = useId();
+
   function set(i: number, patch: Partial<FilaProducto>) {
     setFilas((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
   }
@@ -111,7 +113,13 @@ function ProductosEditor({
   function onNombre(i: number, nombre: string) {
     const match = catalogo.find((c) => c.nombre.toLowerCase() === nombre.trim().toLowerCase());
     if (match) {
-      set(i, { nombre, productoId: match.id, detalle: match.detalle ?? "", precio: match.precio ?? "" });
+      if (filas[i]?.productoId === match.id) {
+        // Ya está vinculado a este producto: no pisar el precio/detalle que el
+        // usuario haya personalizado para este lote; solo actualizar el texto.
+        set(i, { nombre });
+      } else {
+        set(i, { nombre, productoId: match.id, detalle: match.detalle ?? "", precio: match.precio ?? "" });
+      }
     } else {
       set(i, { nombre, productoId: null });
     }
@@ -137,13 +145,13 @@ function ProductosEditor({
   return (
     <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-2">
       <span className="font-semibold text-sm text-[var(--black-100)]">Productos del lote</span>
-      <datalist id="catalogo-productos">
+      <datalist id={datalistId}>
         {catalogo.filter((c) => c.activo).map((c) => <option key={c.id} value={c.nombre} />)}
       </datalist>
       {filas.map((f, i) => (
         <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
           <div className="sm:col-span-4">
-            <Input label={i === 0 ? "Producto" : ""} list="catalogo-productos" name="prodNombre"
+            <Input label={i === 0 ? "Producto" : ""} list={datalistId} name="prodNombre"
               value={f.nombre} onChange={(e) => onNombre(i, e.target.value)} placeholder="ej. Entrada 3D" />
             <input type="hidden" name="prodProductoId" value={f.productoId ?? ""} />
           </div>
