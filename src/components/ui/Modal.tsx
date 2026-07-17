@@ -20,7 +20,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="card w-full max-w-md p-6"
+        className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {title && <h2 className="text-xl font-semibold mb-4">{title}</h2>}
