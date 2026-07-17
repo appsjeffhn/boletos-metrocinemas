@@ -7,11 +7,25 @@ import { Button } from "@/components/ui/Button";
 import { confirmarCanje, type CanjeState } from "./actions";
 
 export default function FormularioCanje(
-  { token, codigo, empresa }: { token: string; codigo: string; empresa: string },
+  { token, codigo, empresa, productos }: {
+    token: string; codigo: string; empresa: string;
+    productos: { nombre: string; detalle: string | null; cantidadPorBoleto: number }[];
+  },
 ) {
   const [state, action, pending] = useActionState<CanjeState, FormData>(
     confirmarCanje.bind(null, token),
     {},
+  );
+
+  const listaProductos = productos.length > 0 && (
+    <div className="text-left text-sm space-y-1 pt-2 border-t" style={{ borderColor: "var(--black-10)" }}>
+      <p className="font-semibold">Incluye:</p>
+      <ul className="list-disc pl-5">
+        {productos.map((p, i) => (
+          <li key={i}>{p.nombre}{p.detalle ? ` · ${p.detalle}` : ""} · ×{p.cantidadPorBoleto}</li>
+        ))}
+      </ul>
+    </div>
   );
 
   if (state?.ok) {
@@ -23,6 +37,7 @@ export default function FormularioCanje(
         <Card className="max-w-sm w-full text-center space-y-4">
           <p className="text-2xl font-bold" style={{ color: "var(--success-150)" }}>✓ Canje exitoso</p>
           <p className="font-mono text-lg">{state.codigo}</p>
+          {listaProductos}
           <a href="/taquilla" className="btn btn-secondary w-full">Escanear otro</a>
         </Card>
       </main>
@@ -37,6 +52,7 @@ export default function FormularioCanje(
           <p className="text-xs font-bold uppercase" style={{ color: "var(--black-60)" }}>Boleto válido</p>
           <p className="font-mono text-lg">{codigo}</p>
           <p className="text-sm" style={{ color: "var(--black-60)" }}>Empresa: {empresa}</p>
+          {listaProductos}
         </Card>
 
         <Card>

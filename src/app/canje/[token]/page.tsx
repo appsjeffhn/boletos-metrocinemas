@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { obtenerBoletoPorToken } from "@/domain/boletos";
+import { productosPorToken } from "@/domain/loteProductosQuery";
 import { getCurrentUser } from "@/lib/session";
 import { Card } from "@/components/ui/Card";
 import FormularioCanje from "./FormularioCanje";
@@ -42,5 +43,13 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
       </main>
     );
   }
-  return <FormularioCanje token={token} codigo={r.boleto.codigo} empresa={r.boleto.empresa} />;
+  const productos = await productosPorToken(db, token);
+  return (
+    <FormularioCanje
+      token={token}
+      codigo={r.boleto.codigo}
+      empresa={r.boleto.empresa}
+      productos={productos}
+    />
+  );
 }
