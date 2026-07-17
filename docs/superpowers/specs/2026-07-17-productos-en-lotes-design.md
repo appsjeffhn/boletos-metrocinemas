@@ -17,6 +17,7 @@ Permitir describir **qué productos** entrega cada boleto de un lote (ej. "Entra
 6. **Edición bloqueada con canjes:** los productos de un lote se pueden editar/agregar libremente **mientras el lote no tenga canjes**; una vez que hay al menos un canje, la sección de productos queda **solo lectura**. Esto congela la historia y hace el reporte exacto sin tablas de snapshot por canje.
 7. **El QR no cambia:** el QR solo codifica el token (`/canje/{token}`); los productos se leen en vivo de la BD al escanear. Editar productos (cuando está permitido) **no** regenera ni invalida los QR.
 8. **Reporte:** resumen por producto (creados/canjeados/pendientes + montos), filtros por fecha/empresa/sede, detalle de canjes por producto, y exportación CSV.
+9. **Taquilla no muestra precios:** las pantallas de taquilla (validación individual y totalizado del escaneo múltiple) muestran solo nombre, detalle y cantidad — **nunca** importes. Los precios solo se ven en la administración (catálogo, crear/editar lote) y en el reporte de items.
 
 ### Fuera de alcance (YAGNI)
 
@@ -96,11 +97,12 @@ Patrón existente respetado: **página server** (carga vía `src/domain/*Query.t
 
 - **`src/app/canje/[token]/page.tsx`:** cargar `productosDeLote` del boleto y mostrarlos (nombre · detalle · "×N por boleto") en la tarjeta de confirmación.
 - **`FormularioCanje.tsx`:** repetir el listado de productos en la pantalla de éxito (verde).
+- **Sin precios:** ninguna pantalla de taquilla individual muestra importes.
 
 ### D. Taquilla — escaneo múltiple + totalizado
 
 - **`src/app/taquilla/multiple/actions.ts`:** `infoBoleto(token)` devuelve también los productos del lote del boleto. Nueva función de dominio `totalizarProductos(boletosValidos)` que agrupa por producto (productoId/nombre) y suma `cantidadPorBoleto` sobre los boletos **válidos a canjear** de la sesión.
-- **`src/app/taquilla/multiple/MultiScanner.tsx`:** panel de **totalizado** (producto → cantidad total) visible antes y después de confirmar. Ej.: 3 boletos (Entrada 3D ×2) + 2 (Entrada 2D ×1) → **6 Entrada 3D · 2 Entrada 2D**.
+- **`src/app/taquilla/multiple/MultiScanner.tsx`:** panel de **totalizado** (producto → cantidad total) visible antes y después de confirmar. Ej.: 3 boletos (Entrada 3D ×2) + 2 (Entrada 2D ×1) → **6 Entrada 3D · 2 Entrada 2D**. El totalizado muestra solo cantidades, **sin precios**.
 
 ### E. Reporte de items
 
