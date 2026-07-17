@@ -1,26 +1,174 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Tipografía ── */
+  --font-family: var(--font-work-sans), "Work Sans", sans-serif;
+
+  /* ── Brand (dorado) ── */
+  --blue-hover: #cf8a01;
+  --blue-100: #fca801;
+  --blue-80: #fdb934;
+  --blue-60: #fdcb67;
+  --blue-50: #fed480;
+  --blue-40: #fedc99;
+  --blue-30: #fee5b3;
+  --blue-20: #feeecc;
+  --blue-10: #fff6e6;
+
+  /* ── Coral / CTA (navy) ── */
+  --coral-hover: #071026;
+  --coral-100: #09142e;
+  --coral-60: #6b7282;
+  --coral-30: #b5b9c0;
+  --coral-10: #e6e8ea;
+
+  /* ── Neutrals ── */
+  --black-100: #1e1e1e;
+  --black-60: #606060;
+  --black-40: #969696;
+  --black-10: #f3f3f3;
+  --black-0: #ffffff;
+
+  /* ── Background ── */
+  --background-page: #f7f8fb;
+
+  /* ── Error ── */
+  --error-200: #610017;
+  --error-150: #910022;
+  --error-100: #c31a2f;
+  --error-10: #fbf3f5;
+
+  /* ── Warning ── */
+  --warning-200: #5b3100;
+  --warning-150: #a16b00;
+  --warning-100: #ffc217;
+  --warning-10: #fff3d1;
+
+  /* ── Success ── */
+  --success-200: #0b3b26;
+  --success-150: #1b8959;
+  --success-100: #6cdcab;
+  --success-10: #f4fdf9;
+
+  /* ── Informative ── */
+  --info-200: #052d65;
+  --info-150: #0a53a5;
+  --info-100: #227ad1;
+  --info-10: #f1f9ff;
+
+  /* ── Gradientes ── */
+  --gradient-horizontal: linear-gradient(to right, #0a1631, #fba701);
+  --gradient-vertical: linear-gradient(to bottom, #fba701, #121e6c);
+
+  /* ── Border radius ── */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 20px;
+  --radius-pill: 32px;
+  --radius-full: 100px;
+
+  /* ── Sombras ── */
+  --shadow-2: 0px 4px 12px 0px rgba(18, 30, 108, 0.08);
+  --shadow-4: 0px 4px 16px 0px rgba(18, 30, 108, 0.08);
+  --shadow-8: 0px 8px 20px 0px rgba(18, 30, 108, 0.08);
+  --shadow-12: 0px 12px 28px 0px rgba(18, 30, 108, 0.08);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-work-sans);
+  --color-brand: var(--blue-100);
+  --color-navy: var(--coral-100);
+  --color-page: var(--background-page);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background-page);
+  color: var(--black-100);
+  font-family: var(--font-family);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+}
+
+/* ── Componentes de marca (utilitarios) ── */
+.card {
+  background: var(--black-0);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  border: none;
+  line-height: 1.2;
+}
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--coral-60);
+  color: var(--coral-30);
+}
+.btn-primary {
+  background: var(--coral-100);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--coral-hover);
+}
+.btn-secondary {
+  background: #fff;
+  color: var(--coral-100);
+  box-shadow: inset 0 0 0 1px var(--coral-10);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--black-10);
+}
+.btn-tertiary {
+  background: var(--blue-10);
+  color: var(--blue-100);
+}
+.btn-tertiary:hover:not(:disabled) {
+  background: var(--blue-20);
+}
+.btn-danger {
+  background: var(--error-150);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--error-200);
+}
+
+.input {
+  background: var(--background-page);
+  border: 1px solid var(--black-10);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  width: 100%;
+  font-size: 15px;
+  color: var(--black-100);
+}
+.input::placeholder {
+  color: var(--black-60);
+}
+.input:focus {
+  outline: 2px solid var(--blue-100);
+  outline-offset: -1px;
 }
