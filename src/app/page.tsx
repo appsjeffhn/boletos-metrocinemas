@@ -4,5 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 export default async function Home() {
   const u = await getCurrentUser();
   if (!u) redirect("/login");
-  redirect(u.rol === "admin" ? "/reportes" : "/taquilla");
+  if (u.puedeAdmin) redirect("/dashboard");
+  if (u.puedeTaquilla) redirect("/taquilla");
+  redirect("/login");
 }

@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 
 export async function crearLoteAction(formData: FormData) {
   const u = await getCurrentUser();
-  if (!u || u.rol !== "admin") redirect("/login");
+  if (!u || !u.puedeAdmin) redirect("/login");
   const cantidad = Number(formData.get("cantidad"));
   if (!Number.isInteger(cantidad) || cantidad < 1) {
     revalidatePath("/lotes");
@@ -26,7 +26,7 @@ export async function crearLoteAction(formData: FormData) {
 
 export async function anularLoteAction(formData: FormData) {
   const u = await getCurrentUser();
-  if (!u || u.rol !== "admin") redirect("/login");
+  if (!u || !u.puedeAdmin) redirect("/login");
   const loteId = Number(formData.get("loteId"));
   await anularLote(db, loteId);
   revalidatePath("/lotes");

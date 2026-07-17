@@ -3,8 +3,10 @@ import { SignJWT, jwtVerify } from "jose";
 
 export type SessionPayload = {
   userId: number;
-  rol: "admin" | "taquilla";
-  sedeId: number | null;
+  puedeAdmin: boolean;
+  puedeTaquilla: boolean;
+  sedeIds: number[];
+  activeSedeId: number | null;
 };
 
 const secret = () => new TextEncoder().encode(process.env.SESSION_SECRET!);
@@ -29,8 +31,10 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, secret());
     return {
       userId: payload.userId as number,
-      rol: payload.rol as "admin" | "taquilla",
-      sedeId: (payload.sedeId as number | null) ?? null,
+      puedeAdmin: Boolean(payload.puedeAdmin),
+      puedeTaquilla: Boolean(payload.puedeTaquilla),
+      sedeIds: Array.isArray(payload.sedeIds) ? (payload.sedeIds as number[]) : [],
+      activeSedeId: (payload.activeSedeId as number | null) ?? null,
     };
   } catch {
     return null;

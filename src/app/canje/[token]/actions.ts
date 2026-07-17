@@ -13,10 +13,10 @@ export async function confirmarCanje(
 ): Promise<CanjeState> {
   const u = await getCurrentUser();
   if (!u) redirect("/login");
-  if (!u.sedeId) return { error: "Tu usuario no tiene sede asignada." };
+  if (!u.activeSedeId) return { error: "Tu usuario no tiene sede asignada." };
 
   const r = await canjearBoleto(db, token, {
-    sedeId: u.sedeId,
+    sedeId: u.activeSedeId,
     usuarioId: u.userId,
     portadorNombre: String(formData.get("portadorNombre") ?? "").trim(),
     portadorDni: String(formData.get("portadorDni") ?? "").trim(),

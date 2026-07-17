@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { usuarios } from "@/db/schema";
+import { usuarios, usuarioSedes } from "@/db/schema";
 import { verifyPassword, signSession } from "@/lib/auth";
 import { setSessionCookie } from "@/lib/session";
 
@@ -17,8 +17,25 @@ export async function iniciarSesion(
   if (!u || !u.activo || !(await verifyPassword(password, u.passwordHash))) {
     return { error: "Usuario o contraseña incorrectos" };
   }
-  // TODO(v2): reemplazar por puedeAdmin/puedeTaquilla cuando el login se actualice (fuera de alcance de esta tarea de esquema).
-  const token = await signSession({ userId: u.id, rol: u.rol as "admin" | "taquilla", sedeId: u.sedeId });
+
+  const puedeAdmin = u.puedeAdmin;
+  const puedeTaquilla = u.puedeTaquilla;
+  if (!puedeAdmin && !puedeTaquilla) {
+    return { error: "Tu usuario no tiene accesos asignados" };
+  }
+
+  const filasSedes = await db
+    .select({ sedeId: usuarioSedes.sedeId })
+    .from(usuarioSedes)
+    .where(eq(usuarioSedes.usuarioId, u.id));
+  const sedeIds = filasSedes.map((f) => f.sedeId);
+
+  const activeSedeId = puedeTaquilla && sedeIds.length === 1 ? sedeIds[0] : null;
+
+  const token = await signSession({ userId: u.id, puedeAdmin, puedeTaquilla, sedeIds, activeSedeId });
   await setSessionCookie(token);
-  redirect(u.rol === "admin" ? "/reportes" : "/taquilla");
+
+  if (puedeAdmin) redirect("/dashboard");
+  if (sedeIds.length > 1) redirect("/elegir-sede");
+  redirect("/taquilla");
 }

@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/session";
 
 export async function crearUsuario(formData: FormData) {
   const u = await getCurrentUser();
-  if (!u || u.rol !== "admin") redirect("/login");
+  if (!u || !u.puedeAdmin) redirect("/login");
   const usuario = String(formData.get("usuario") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const rol = String(formData.get("rol")) === "admin" ? "admin" : "taquilla";

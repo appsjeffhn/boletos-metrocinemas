@@ -13,9 +13,16 @@ describe("password", () => {
 
 describe("sesión", () => {
   it("firma y verifica el payload", async () => {
-    const t = await signSession({ userId: 7, rol: "taquilla", sedeId: 3 });
+    const payload = { userId: 7, puedeAdmin: false, puedeTaquilla: true, sedeIds: [3, 5], activeSedeId: 3 };
+    const t = await signSession(payload);
     const p = await verifySession(t);
-    expect(p).toEqual({ userId: 7, rol: "taquilla", sedeId: 3 });
+    expect(p).toEqual(payload);
+  });
+  it("firma y verifica un admin sin sedes", async () => {
+    const payload = { userId: 1, puedeAdmin: true, puedeTaquilla: false, sedeIds: [], activeSedeId: null };
+    const t = await signSession(payload);
+    const p = await verifySession(t);
+    expect(p).toEqual(payload);
   });
   it("rechaza token manipulado", async () => {
     expect(await verifySession("basura.invalida.xyz")).toBeNull();
