@@ -16,6 +16,8 @@ export type LoteListado = {
   sedeIds: number[];
   /** true si el lote tiene al menos un boleto canjeado (bloquea editar/eliminar). */
   tieneCanjes: boolean;
+  /** cantidad de boletos canjeados del lote (para la barra de progreso). */
+  canjeados: number;
 };
 
 export async function listarLotes(db: DrizzleDb): Promise<LoteListado[]> {
@@ -40,6 +42,7 @@ export async function listarLotes(db: DrizzleDb): Promise<LoteListado[]> {
     .where(eq(boletos.estado, "canjeado"))
     .groupBy(boletos.loteId);
   const lotesConCanjes = new Set(canjesPorLote.map((c) => c.loteId));
+  const canjeadosPorLote = new Map(canjesPorLote.map((c) => [c.loteId, c.canjeados]));
 
   const porLote = new Map<number, LoteListado>();
   for (const fila of filas) {
@@ -50,6 +53,7 @@ export async function listarLotes(db: DrizzleDb): Promise<LoteListado[]> {
         cantidad: fila.cantidad, fechaVencimiento: fila.fechaVencimiento, creadoEn: fila.creadoEn,
         anulado: fila.anuladoEn !== null, anuladoMotivo: fila.anuladoMotivo, sedes: [], sedeIds: [],
         tieneCanjes: lotesConCanjes.has(fila.id),
+        canjeados: canjeadosPorLote.get(fila.id) ?? 0,
       };
       porLote.set(fila.id, l);
     }
