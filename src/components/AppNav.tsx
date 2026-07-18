@@ -8,7 +8,7 @@ const NAV = [
   { href: "/empresas", label: "Empresas" },
   { href: "/lotes", label: "Lotes" },
   { href: "/productos", label: "Productos" },
-  { href: "/usuarios", label: "Usuarios" },
+  { href: "/configuracion", label: "Configuración" },
 ];
 
 export function AppNav() {

@@ -55,7 +55,7 @@ export async function crearUsuario(formData: FormData): Promise<UsuarioActionRes
     await db.insert(usuarioSedes).values(sedeIds.map((sedeId) => ({ usuarioId: creado.id, sedeId })));
   }
 
-  revalidatePath("/usuarios");
+  revalidatePath("/configuracion/usuarios");
 }
 
 export async function editarUsuario(formData: FormData): Promise<UsuarioActionResult> {
@@ -98,7 +98,7 @@ export async function editarUsuario(formData: FormData): Promise<UsuarioActionRe
     await db.insert(usuarioSedes).values(sedeIds.map((sedeId) => ({ usuarioId: id, sedeId })));
   }
 
-  revalidatePath("/usuarios");
+  revalidatePath("/configuracion/usuarios");
 }
 
 export async function toggleUsuarioActivo(formData: FormData): Promise<void> {
@@ -113,5 +113,5 @@ export async function toggleUsuarioActivo(formData: FormData): Promise<void> {
   if (!actual) return;
 
   await db.update(usuarios).set({ activo: !actual.activo }).where(eq(usuarios.id, id));
-  revalidatePath("/usuarios");
+  revalidatePath("/configuracion/usuarios");
 }

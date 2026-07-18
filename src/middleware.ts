@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySession, type SessionPayload } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/session";
 
-const ADMIN_PREFIXES = ["/dashboard", "/reportes", "/empresas", "/lotes", "/usuarios"];
+const ADMIN_PREFIXES = ["/dashboard", "/reportes", "/empresas", "/lotes", "/configuracion"];
 const TAQUILLA_PREFIXES = ["/taquilla", "/canje"];
 
 function destinoDisponible(sesion: SessionPayload | null): string {
@@ -38,7 +38,7 @@ export const config = {
     "/empresas/:path*",
     "/lotes/:path*",
     "/reportes/:path*",
-    "/usuarios/:path*",
+    "/configuracion/:path*",
     "/taquilla/:path*",
     "/canje/:path*",
     "/elegir-sede/:path*",
