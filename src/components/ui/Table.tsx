@@ -2,7 +2,7 @@ import type { ReactNode, TableHTMLAttributes, TdHTMLAttributes } from "react";
 
 export function Table({ children, ...rest }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="card overflow-x-auto p-0">
+    <div className="card ui-table overflow-x-auto p-0">
       <table {...rest} className="w-full text-sm">
         {children}
       </table>

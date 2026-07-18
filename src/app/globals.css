@@ -31,6 +31,8 @@
 
   /* ── Background ── */
   --background-page: #f7f8fb;
+  --hair: #ebedf2;
+  --row-hover: #f4f6fa;
 
   /* ── Error ── */
   --error-200: #610017;
@@ -103,8 +105,24 @@ h1 {
 /* ── Componentes de marca (utilitarios) ── */
 .card {
   background: var(--black-0);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-2);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-8);
+}
+
+/* ── Tablas (compartidas) ── */
+.ui-table thead th {
+  background: var(--row-hover);
+  border-bottom: 1px solid var(--hair);
+}
+.ui-table tbody tr {
+  transition: background 0.12s;
+}
+.ui-table tbody tr:hover td {
+  background: var(--row-hover);
+}
+.ui-table tbody tr:first-child td {
+  border-top: 0;
 }
 
 .btn {
