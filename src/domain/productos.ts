@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { DrizzleDb } from "@/db/client";
 import { productos } from "@/db/schema";
+import { esViolacionUnica } from "@/lib/dbErrors";
 
 function parsearPrecio(precio?: string | null): { precio: string | null } | { error: string } {
   if (precio == null) return { precio: null };
@@ -10,13 +11,6 @@ function parsearPrecio(precio?: string | null): { precio: string | null } | { er
   if (!Number.isFinite(n) || n < 0) return { error: "El precio no es válido." };
   if (n > 99999999.99) return { error: "El precio es demasiado alto." };
   return { precio: n.toFixed(2) };
-}
-
-function esViolacionUnica(err: unknown): boolean {
-  const e = err as { code?: string; cause?: { code?: string }; message?: string };
-  return e?.code === "23505"
-    || e?.cause?.code === "23505"
-    || /duplicate key|unique constraint|productos_nombre_unique/i.test(e?.message ?? "");
 }
 
 export async function crearProducto(
