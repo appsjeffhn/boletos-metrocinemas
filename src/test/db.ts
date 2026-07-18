@@ -10,7 +10,8 @@ async function crearEsquema(db: DrizzleDb) {
   await db.execute(sql`CREATE TYPE rol AS ENUM ('admin','taquilla')`);
   await db.execute(sql`CREATE TYPE estado_boleto AS ENUM ('activo','canjeado','anulado')`);
   await db.execute(sql`
-    CREATE TABLE sedes (id serial PRIMARY KEY, nombre text NOT NULL UNIQUE)`);
+    CREATE TABLE sedes (id serial PRIMARY KEY, nombre text NOT NULL UNIQUE,
+      activo boolean NOT NULL DEFAULT true)`);
   await db.execute(sql`
     CREATE TABLE usuarios (
       id serial PRIMARY KEY, usuario text NOT NULL UNIQUE, password_hash text NOT NULL,

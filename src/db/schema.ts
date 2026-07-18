@@ -8,6 +8,7 @@ export const estadoBoletoEnum = pgEnum("estado_boleto", ["activo", "canjeado", "
 export const sedes = pgTable("sedes", {
   id: serial("id").primaryKey(),
   nombre: text("nombre").notNull().unique(),
+  activo: boolean("activo").notNull().default(true),
 });
 
 export const usuarios = pgTable("usuarios", {
