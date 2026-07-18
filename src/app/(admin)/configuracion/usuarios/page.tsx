@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { db } from "@/db/client";
-import { sedes as sedesTable } from "@/db/schema";
 import { listarUsuarios } from "@/domain/usuariosQuery";
+import { sedesActivas } from "@/domain/sedesQuery";
 import { UsuariosPanel } from "./UsuariosPanel";
 
 export default async function UsuariosPage() {
   const [sedes, usuarios] = await Promise.all([
-    db.select({ id: sedesTable.id, nombre: sedesTable.nombre }).from(sedesTable).orderBy(sedesTable.nombre),
+    sedesActivas(db),
     listarUsuarios(db),
   ]);
 

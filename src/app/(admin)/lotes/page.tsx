@@ -1,16 +1,16 @@
 import { db } from "@/db/client";
-import { sedes as sedesTable } from "@/db/schema";
 import { listarEmpresas } from "@/domain/empresasQuery";
 import { listarLotes } from "@/domain/lotesQuery";
 import { listarProductos } from "@/domain/productosQuery";
 import { productosDeLotes } from "@/domain/loteProductosQuery";
+import { sedesActivas } from "@/domain/sedesQuery";
 import { LotesPanel } from "./LotesPanel";
 
 export default async function LotesPage() {
   const [empresas, lotes, sedes, catalogo] = await Promise.all([
     listarEmpresas(db),
     listarLotes(db),
-    db.select({ id: sedesTable.id, nombre: sedesTable.nombre }).from(sedesTable).orderBy(sedesTable.nombre),
+    sedesActivas(db),
     listarProductos(db),
   ]);
 

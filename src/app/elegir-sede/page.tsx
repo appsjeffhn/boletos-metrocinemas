@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { sedes } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
@@ -13,7 +13,11 @@ export default async function ElegirSedePage() {
   if (!u || !u.puedeTaquilla) redirect("/login");
   if (u.sedeIds.length === 0) redirect("/taquilla");
 
-  const listaSedes = await db.select().from(sedes).where(inArray(sedes.id, u.sedeIds)).orderBy(sedes.nombre);
+  const listaSedes = await db
+    .select()
+    .from(sedes)
+    .where(and(inArray(sedes.id, u.sedeIds), eq(sedes.activo, true)))
+    .orderBy(sedes.nombre);
 
   return (
     <main className="min-h-screen">
@@ -24,6 +28,11 @@ export default async function ElegirSedePage() {
           Tu usuario tiene acceso a varias sedes. Selecciona con la que vas a trabajar.
         </p>
         <div className="grid gap-3">
+          {listaSedes.length === 0 && (
+            <p className="text-sm text-center" style={{ color: "var(--black-60)" }}>
+              No tienes sedes activas asignadas. Contacta a un administrador.
+            </p>
+          )}
           {listaSedes.map((s) => (
             <Card key={s.id} className="p-0">
               <form action={elegirSede}>
