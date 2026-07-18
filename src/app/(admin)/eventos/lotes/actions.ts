@@ -2,7 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
-import { sedes } from "@/db/schema";
+import { empresas, sedes } from "@/db/schema";
+import { normalizarPrefijo } from "@/lib/codigo";
 import {
   anularLote,
   editarLote,
@@ -14,6 +15,27 @@ import {
 import { getCurrentUser } from "@/lib/session";
 
 export type LoteActionResult = { error?: string } | void;
+
+export async function crearEmpresaRapidaAction(
+  nombre: string,
+  prefijo: string,
+): Promise<{ id: number; nombre: string } | { error: string }> {
+  const u = await getCurrentUser();
+  if (!u || !u.puedeAdmin) redirect("/login");
+  const n = nombre.trim();
+  if (!n) return { error: "El nombre del cliente es obligatorio." };
+  const pref = normalizarPrefijo(prefijo.trim() || n);
+  const creados = await db
+    .insert(empresas)
+    .values({ nombre: n, prefijo: pref })
+    .onConflictDoNothing()
+    .returning({ id: empresas.id, nombre: empresas.nombre });
+  const creado = creados[0];
+  if (!creado) return { error: "Ya existe un cliente con ese nombre." };
+  revalidatePath("/eventos/empresas");
+  revalidatePath("/eventos/lotes");
+  return { id: creado.id, nombre: creado.nombre };
+}
 
 function productosDesde(formData: FormData): ProductoLoteInput[] {
   const nombres = formData.getAll("prodNombre").map((v) => String(v));

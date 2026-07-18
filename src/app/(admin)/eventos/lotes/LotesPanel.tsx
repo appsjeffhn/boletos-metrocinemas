@@ -2,7 +2,6 @@
 import { useId, useState, useTransition } from "react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -15,6 +14,7 @@ import {
   editarLoteAction,
   eliminarLoteAction,
   editarProductosLoteAction,
+  crearEmpresaRapidaAction,
   type LoteActionResult,
 } from "./actions";
 import styles from "./lotes.module.css";
@@ -204,8 +204,16 @@ export function LotesPanel({
 }) {
   const [vista, setVista] = useState<"cards" | "tabla">("cards");
   const [filtro, setFiltro] = useState("");
+  const [fEstado, setFEstado] = useState<"todos" | "activo" | "anulado">("todos");
+  const [fVenc, setFVenc] = useState<"todos" | "pronto" | "vencido">("todos");
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const [creando, setCreando] = useState(false);
+  const [empresasState, setEmpresasState] = useState<Empresa[]>(empresas);
+  const [empresaSel, setEmpresaSel] = useState("");
+  const [nuevoCli, setNuevoCli] = useState(false);
+  const [cliNombre, setCliNombre] = useState("");
+  const [cliPrefijo, setCliPrefijo] = useState("");
+  const [cliError, setCliError] = useState<string | null>(null);
   const [crearError, setCrearError] = useState<string | null>(null);
   const [crearKey, setCrearKey] = useState(0);
   const [anulando, setAnulando] = useState<LoteListado | null>(null);
@@ -226,6 +234,21 @@ export function LotesPanel({
       if (r?.error) { setCrearError(r.error); return; }
       setCrearKey((k) => k + 1);
       setCreando(false);
+      setEmpresaSel("");
+      setNuevoCli(false);
+    });
+  }
+
+  function crearCliente() {
+    setCliError(null);
+    startTransition(async () => {
+      const r = await crearEmpresaRapidaAction(cliNombre, cliPrefijo);
+      if ("error" in r) { setCliError(r.error); return; }
+      setEmpresasState((prev) => [...prev, { id: r.id, nombre: r.nombre }].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+      setEmpresaSel(String(r.id));
+      setNuevoCli(false);
+      setCliNombre("");
+      setCliPrefijo("");
     });
   }
   function cerrarAnular() { setAnulando(null); setAnularError(null); setMotivo(""); }
@@ -265,9 +288,17 @@ export function LotesPanel({
   }
 
   const q = filtro.trim().toLowerCase();
-  const lista = q
-    ? lotes.filter((l) => l.empresa.toLowerCase().includes(q) || l.descripcion.toLowerCase().includes(q))
-    : lotes;
+  const lista = lotes.filter((l) => {
+    if (q && !(l.empresa.toLowerCase().includes(q) || l.descripcion.toLowerCase().includes(q))) return false;
+    if (fEstado === "activo" && l.anulado) return false;
+    if (fEstado === "anulado" && !l.anulado) return false;
+    if (fVenc !== "todos") {
+      const dias = Math.round((Date.parse(l.fechaVencimiento) - Date.parse(hoy)) / 86400000);
+      if (fVenc === "vencido" && dias >= 0) return false;
+      if (fVenc === "pronto" && !(dias >= 0 && dias <= 7)) return false;
+    }
+    return true;
+  });
 
   function menuNode(l: LoteListado, full: boolean) {
     const open = menuFor === l.id;
@@ -312,6 +343,17 @@ export function LotesPanel({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
           <input placeholder="Buscar lote o empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
+        <select className={styles.fsel} value={fEstado} onChange={(e) => setFEstado(e.target.value as typeof fEstado)} aria-label="Filtrar por estado">
+          <option value="todos">Todos los estados</option>
+          <option value="activo">Activos</option>
+          <option value="anulado">Anulados</option>
+        </select>
+        <select className={styles.fsel} value={fVenc} onChange={(e) => setFVenc(e.target.value as typeof fVenc)} aria-label="Filtrar por vencimiento">
+          <option value="todos">Cualquier vencimiento</option>
+          <option value="pronto">Por vencer (≤7 días)</option>
+          <option value="vencido">Vencidos</option>
+        </select>
+        <span className={styles.spacer} />
         <div className={styles.seg}>
           <button type="button" className={vista === "cards" ? styles.on : ""} onClick={() => setVista("cards")}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="13" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="3" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="13" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /></svg>
@@ -333,7 +375,7 @@ export function LotesPanel({
             const pct = l.cantidad > 0 ? Math.round((l.canjeados / l.cantidad) * 100) : 0;
             const vi = venceInfo(hoy, l.fechaVencimiento);
             return (
-              <Card key={l.id}>
+              <Card key={l.id} className={styles.loteCard}>
                 <div className={styles.ltop}>
                   <div><div className={styles.emp}>{l.empresa}</div><div className={styles.desc}>{l.descripcion}</div></div>
                   {l.anulado ? <Badge tone="error">Anulado</Badge> : <Badge tone="success">Activo</Badge>}
@@ -388,10 +430,30 @@ export function LotesPanel({
       {/* Nuevo lote */}
       <Modal open={creando} onClose={() => setCreando(false)} title="Nuevo lote" size="lg">
         <form key={crearKey} action={onCrear} className="space-y-3">
-          <Select label="Empresa" name="empresaId" required>
-            <option value="">Selecciona…</option>
-            {empresas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-          </Select>
+          <div className="flex flex-col gap-1 text-sm">
+            <span className="font-semibold text-[var(--black-100)]">Empresa (cliente)</span>
+            <div className="flex gap-2 items-center">
+              <select name="empresaId" required value={empresaSel} onChange={(e) => setEmpresaSel(e.target.value)} className="input">
+                <option value="">Selecciona…</option>
+                {empresasState.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+              <button type="button" className="btn btn-secondary btn-sm shrink-0" onClick={() => { setNuevoCli((v) => !v); setCliError(null); }}>
+                {nuevoCli ? "Cancelar" : "+ Nuevo"}
+              </button>
+            </div>
+            {nuevoCli && (
+              <div className="mt-1 p-3 rounded-[var(--radius-sm)] flex flex-col gap-2" style={{ background: "var(--black-10)" }}>
+                <Input label="Nombre del cliente" value={cliNombre} onChange={(e) => setCliNombre(e.target.value)} placeholder="ej. Coca-Cola" />
+                <Input label="Prefijo (opcional)" value={cliPrefijo} onChange={(e) => setCliPrefijo(e.target.value)} placeholder="ej. CC" maxLength={6} />
+                {cliError && <p className="text-sm text-[var(--error-150)]">{cliError}</p>}
+                <div>
+                  <Button type="button" variant="gold" size="sm" onClick={crearCliente} disabled={pending || cliNombre.trim().length === 0}>
+                    {pending ? "Creando…" : "Crear cliente"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           <Input label="Descripción" name="descripcion" placeholder="ej. Cortesías agosto" required />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Cantidad" name="cantidad" type="number" min="1" placeholder="Cantidad" required />
