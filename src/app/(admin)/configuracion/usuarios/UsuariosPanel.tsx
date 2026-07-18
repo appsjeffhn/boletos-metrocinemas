@@ -78,7 +78,7 @@ const Dots = () => (
 );
 
 export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[]; sedes: Sede[] }) {
-  const [vista, setVista] = useState<"cards" | "tabla">("cards");
+  const [vista, setVista] = useState<"cards" | "tabla">("tabla");
   const [filtro, setFiltro] = useState("");
   const [fEstado, setFEstado] = useState<"todos" | "activo" | "inactivo">("todos");
   const [menuFor, setMenuFor] = useState<number | null>(null);

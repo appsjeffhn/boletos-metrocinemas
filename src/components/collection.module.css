@@ -53,7 +53,7 @@
 
 /* Tabla depurada */
 .list { overflow: visible; padding: 0; }
-.trow { display: grid; gap: 14px; align-items: center; padding: 13px 16px; }
+.trow { display: grid; gap: 12px; align-items: center; padding: 9px 14px; font-size: 13px; }
 .trow + .trow { border-top: 1px solid var(--hair); }
 .thead { background: var(--row-hover); border-bottom: 1px solid var(--hair); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--black-40); font-weight: 700; }
 .trowBody:hover { background: var(--row-hover); }

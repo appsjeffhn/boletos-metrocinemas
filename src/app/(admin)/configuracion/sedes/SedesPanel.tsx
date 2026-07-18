@@ -14,7 +14,7 @@ const Dots = () => (
 );
 
 export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
-  const [vista, setVista] = useState<"cards" | "tabla">("cards");
+  const [vista, setVista] = useState<"cards" | "tabla">("tabla");
   const [filtro, setFiltro] = useState("");
   const [fEstado, setFEstado] = useState<"todos" | "activa" | "inactiva">("todos");
   const [menuFor, setMenuFor] = useState<number | null>(null);
