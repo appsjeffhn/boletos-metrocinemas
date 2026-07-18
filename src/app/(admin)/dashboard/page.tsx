@@ -122,7 +122,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* ACCESOS RÁPIDOS */}
-        <div className={`${s.tile} ${s.dark} ${s.c2}`}>
+        <div className={`${s.tile} ${s.dark} ${s.c4}`}>
           <div className={s.lbl}>Accesos rápidos</div>
           <div className={s.acts}>
             <Link href="/eventos">
@@ -138,6 +138,36 @@ export default async function DashboardPage() {
               Configuración
             </Link>
           </div>
+        </div>
+
+        {/* CLIENTES ACTIVOS */}
+        <div className={`${s.tile} ${s.c4}`}>
+          <span className={s.lbl}>Clientes activos</span>
+          {kpis.clientesActivos.length === 0 ? (
+            <p className={s.empty}>Sin clientes con boletos activos.</p>
+          ) : (
+            <div className={s.clientes}>
+              <div className={s.chead}>Cliente</div>
+              <div className={`${s.chead} ${s.r}`}>Pendientes</div>
+              <div className={`${s.chead} ${s.r}`}>Canjeados</div>
+              <div className={s.chead}>Progreso</div>
+              {kpis.clientesActivos.map((c) => {
+                const total = c.pendientes + c.canjeados;
+                const pct = total > 0 ? Math.round((c.canjeados / total) * 100) : 0;
+                return (
+                  <div key={c.empresa} style={{ display: "contents" }}>
+                    <div className={s.cname}>{c.empresa}</div>
+                    <div className={s.cnum}>{c.pendientes.toLocaleString("es-HN")}</div>
+                    <div className={s.cnum}>{c.canjeados.toLocaleString("es-HN")}</div>
+                    <div className={s.cprog}>
+                      <span className={s.track}><span className={s.fill} style={{ width: `${pct}%` }} /></span>
+                      <span className={s.p}>{pct}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* ÚLTIMOS CANJES */}
