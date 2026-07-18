@@ -73,13 +73,13 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
     const open = menuFor === p.id;
     return (
       <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" onClick={() => setMenuFor(open ? null : p.id)}>
+        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : p.id)}>
           <Dots />
         </button>
         {open && (
           <>
             <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu}>
+            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
               <button type="button" onClick={() => { setMenuFor(null); setEditarError(null); setEditando(p); }}>Editar</button>
               {p.activo && (
                 <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setDesactivarError(null); setDesactivando(p); }}>
@@ -98,7 +98,7 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
       <div className={styles.toolbar}>
         <div className={styles.search}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          <input placeholder="Buscar producto…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <input placeholder="Buscar producto…" aria-label="Buscar producto" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
         <select className={styles.fsel} value={fEstado} onChange={(e) => setFEstado(e.target.value as typeof fEstado)} aria-label="Filtrar por estado">
           <option value="todos">Todos los estados</option>
@@ -141,16 +141,16 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
           ))}
         </div>
       ) : (
-        <div className={`card ${styles.list}`}>
-          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1fr 0.9fr 48px" }}>
-            <span>Producto</span><span className={styles.tHideSm}>Precio</span><span className={styles.tHideSm}>Estado</span><span />
+        <div className={`card ${styles.list}`} role="table" aria-label="Productos">
+          <div className={`${styles.trow} ${styles.thead}`} role="row" style={{ gridTemplateColumns: "2fr 1fr 0.9fr 48px" }}>
+            <span role="columnheader">Producto</span><span className={styles.tHideSm} role="columnheader">Precio</span><span className={styles.tHideSm} role="columnheader">Estado</span><span role="columnheader" />
           </div>
           {lista.map((p) => (
-            <div className={`${styles.trow} ${styles.trowBody}`} key={p.id} style={{ gridTemplateColumns: "2fr 1fr 0.9fr 48px" }}>
-              <div className={styles.lname}><b>{p.nombre}</b><span>{p.detalle ?? "—"}</span></div>
-              <div className={styles.tHideSm}>{fmtPrecio(p.precio)}</div>
-              <div className={styles.tHideSm}>{p.activo ? <Badge tone="success">Activo</Badge> : <Badge tone="neutral">Inactivo</Badge>}</div>
-              <div className={styles.center}>{menuNode(p)}</div>
+            <div className={`${styles.trow} ${styles.trowBody}`} key={p.id} role="row" style={{ gridTemplateColumns: "2fr 1fr 0.9fr 48px" }}>
+              <div className={styles.lname} role="cell"><b>{p.nombre}</b><span>{p.detalle ?? "—"}</span></div>
+              <div className={styles.tHideSm} role="cell">{fmtPrecio(p.precio)}</div>
+              <div className={styles.tHideSm} role="cell">{p.activo ? <Badge tone="success">Activo</Badge> : <Badge tone="neutral">Inactivo</Badge>}</div>
+              <div className={styles.center} role="cell">{menuNode(p)}</div>
             </div>
           ))}
         </div>

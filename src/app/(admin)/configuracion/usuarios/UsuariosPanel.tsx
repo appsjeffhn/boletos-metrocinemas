@@ -143,6 +143,8 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
           type="button"
           className={styles.icobtn}
           aria-label="Acciones"
+          aria-haspopup="menu"
+          aria-expanded={open}
           onClick={() => setMenuFor(open ? null : u.id)}
         >
           <Dots />
@@ -150,7 +152,13 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
         {open && (
           <>
             <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu}>
+            <div
+              className={styles.menu}
+              role="menu"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setMenuFor(null);
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -187,7 +195,12 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
             <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
             <path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
-          <input placeholder="Buscar usuario…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <input
+            placeholder="Buscar usuario…"
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            aria-label="Buscar usuario"
+          />
         </div>
         <select
           className={styles.fsel}
@@ -266,32 +279,37 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
           })}
         </div>
       ) : (
-        <div className={`card ${styles.list}`}>
-          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "1.6fr 1.4fr 0.9fr 48px" }}>
-            <span>Usuario</span>
-            <span className={styles.tHideSm}>Accesos</span>
-            <span>Estado</span>
-            <span />
+        <div className={`card ${styles.list}`} role="table" aria-label="Usuarios">
+          <div
+            className={`${styles.trow} ${styles.thead}`}
+            role="row"
+            style={{ gridTemplateColumns: "1.6fr 1.4fr 0.9fr 48px" }}
+          >
+            <span role="columnheader">Usuario</span>
+            <span className={styles.tHideSm} role="columnheader">Accesos</span>
+            <span role="columnheader">Estado</span>
+            <span role="columnheader" />
           </div>
           {lista.map((u) => (
             <div
               className={`${styles.trow} ${styles.trowBody}`}
               key={u.id}
+              role="row"
               style={{ gridTemplateColumns: "1.6fr 1.4fr 0.9fr 48px" }}
             >
-              <div className={styles.lname}>
+              <div className={styles.lname} role="cell">
                 <b>{u.usuario}</b>
               </div>
-              <div className={styles.tHideSm}>
+              <div className={styles.tHideSm} role="cell">
                 <div className="flex gap-1.5">
                   {u.puedeAdmin && <Badge tone="brand">Admin</Badge>}
                   {u.puedeTaquilla && <Badge tone="info">Taquilla</Badge>}
                 </div>
               </div>
-              <div>
+              <div role="cell">
                 <Badge tone={u.activo ? "success" : "neutral"}>{u.activo ? "Activo" : "Inactivo"}</Badge>
               </div>
-              <div className={styles.center}>{menuNode(u)}</div>
+              <div className={styles.center} role="cell">{menuNode(u)}</div>
             </div>
           ))}
         </div>

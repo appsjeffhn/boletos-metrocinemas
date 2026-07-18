@@ -75,13 +75,13 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
     const open = menuFor === e.id;
     return (
       <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" onClick={() => setMenuFor(open ? null : e.id)}>
+        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : e.id)}>
           <Dots />
         </button>
         {open && (
           <>
             <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu}>
+            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
               <button type="button" onClick={() => { setMenuFor(null); setError(null); setEditando(e); }}>Editar</button>
               <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setError(null); setEliminando(e); }}>Eliminar</button>
             </div>
@@ -96,7 +96,7 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
       <div className={styles.toolbar}>
         <div className={styles.search}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          <input placeholder="Buscar empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <input aria-label="Buscar empresa" placeholder="Buscar empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
         <span className={styles.spacer} />
         <div className={styles.seg}>
@@ -137,19 +137,19 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
           ))}
         </div>
       ) : (
-        <div className={`card ${styles.list}`}>
-          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }}>
-            <span>Empresa</span>
-            <span className={styles.tHideSm}>Contacto</span>
-            <span className={styles.tHideSm}>Teléfono</span>
-            <span />
+        <div className={`card ${styles.list}`} role="table" aria-label="Empresas">
+          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }} role="row">
+            <span role="columnheader">Empresa</span>
+            <span className={styles.tHideSm} role="columnheader">Contacto</span>
+            <span className={styles.tHideSm} role="columnheader">Teléfono</span>
+            <span role="columnheader" />
           </div>
           {lista.map((e) => (
-            <div className={`${styles.trow} ${styles.trowBody}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }} key={e.id}>
-              <div className={styles.lname}><b>{e.nombre}</b><span>M{e.prefijo}-</span></div>
-              <div className={styles.tHideSm}>{e.contacto || "—"}</div>
-              <div className={styles.tHideSm}>{e.telefono || "—"}</div>
-              <div className={styles.center}>{menuNode(e)}</div>
+            <div className={`${styles.trow} ${styles.trowBody}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }} key={e.id} role="row">
+              <div className={styles.lname} role="cell"><b>{e.nombre}</b><span>M{e.prefijo}-</span></div>
+              <div className={styles.tHideSm} role="cell">{e.contacto || "—"}</div>
+              <div className={styles.tHideSm} role="cell">{e.telefono || "—"}</div>
+              <div className={styles.center} role="cell">{menuNode(e)}</div>
             </div>
           ))}
         </div>

@@ -146,20 +146,22 @@ export default async function DashboardPage() {
           {kpis.clientesActivos.length === 0 ? (
             <p className={s.empty}>Sin clientes con boletos activos.</p>
           ) : (
-            <div className={s.clientes}>
-              <div className={s.chead}>Cliente</div>
-              <div className={`${s.chead} ${s.r}`}>Pendientes</div>
-              <div className={`${s.chead} ${s.r}`}>Canjeados</div>
-              <div className={s.chead}>Progreso</div>
+            <div className={s.clientes} role="table" aria-label="Clientes activos">
+              <div role="row" style={{ display: "contents" }}>
+                <div role="columnheader" className={s.chead}>Cliente</div>
+                <div role="columnheader" className={`${s.chead} ${s.r}`}>Pendientes</div>
+                <div role="columnheader" className={`${s.chead} ${s.r}`}>Canjeados</div>
+                <div role="columnheader" className={s.chead}>Progreso</div>
+              </div>
               {kpis.clientesActivos.map((c) => {
                 const total = c.pendientes + c.canjeados;
                 const pct = total > 0 ? Math.round((c.canjeados / total) * 100) : 0;
                 return (
-                  <div key={c.empresa} style={{ display: "contents" }}>
-                    <div className={s.cname}>{c.empresa}</div>
-                    <div className={s.cnum}>{c.pendientes.toLocaleString("es-HN")}</div>
-                    <div className={s.cnum}>{c.canjeados.toLocaleString("es-HN")}</div>
-                    <div className={s.cprog}>
+                  <div key={c.empresa} role="row" style={{ display: "contents" }}>
+                    <div role="cell" className={s.cname}>{c.empresa}</div>
+                    <div role="cell" className={s.cnum}>{c.pendientes.toLocaleString("es-HN")}</div>
+                    <div role="cell" className={s.cnum}>{c.canjeados.toLocaleString("es-HN")}</div>
+                    <div role="cell" className={s.cprog}>
                       <span className={s.track}><span className={s.fill} style={{ width: `${pct}%` }} /></span>
                       <span className={s.p}>{pct}%</span>
                     </div>
@@ -178,13 +180,13 @@ export default async function DashboardPage() {
           {kpis.ultimosCanjes.length === 0 ? (
             <p className={s.empty}>Sin canjes aún.</p>
           ) : (
-            <div className={s.list}>
+            <div className={s.list} role="table" aria-label="Últimos canjes">
               {kpis.ultimosCanjes.map((c) => (
-                <div className={s.li} key={c.codigo}>
-                  <span className={s.liCode}>{c.codigo}</span>
-                  <span className={s.liMuted}>{c.empresa}</span>
-                  <span className={s.liMuted}>{c.sede ?? "—"}</span>
-                  <span className={s.liDate}>{c.fecha ? new Date(c.fecha).toLocaleString("es-HN") : "—"}</span>
+                <div className={s.li} key={c.codigo} role="row">
+                  <span role="cell" className={s.liCode}>{c.codigo}</span>
+                  <span role="cell" className={s.liMuted}>{c.empresa}</span>
+                  <span role="cell" className={s.liMuted}>{c.sede ?? "—"}</span>
+                  <span role="cell" className={s.liDate}>{c.fecha ? new Date(c.fecha).toLocaleString("es-HN") : "—"}</span>
                 </div>
               ))}
             </div>

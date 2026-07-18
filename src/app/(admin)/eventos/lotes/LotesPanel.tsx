@@ -304,13 +304,13 @@ export function LotesPanel({
     const open = menuFor === l.id;
     return (
       <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" onClick={() => setMenuFor(open ? null : l.id)}>
+        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : l.id)}>
           <Dots />
         </button>
         {open && (
           <>
             <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu}>
+            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
               {full && (
                 <>
                   <a href={`/api/lote/${l.id}/pdf`}>Imprimir / PDF</a>
@@ -341,7 +341,7 @@ export function LotesPanel({
       <div className={styles.toolbar}>
         <div className={styles.search}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          <input placeholder="Buscar lote o empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <input aria-label="Buscar lote o empresa" placeholder="Buscar lote o empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
         <select className={styles.fsel} value={fEstado} onChange={(e) => setFEstado(e.target.value as typeof fEstado)} aria-label="Filtrar por estado">
           <option value="todos">Todos los estados</option>
@@ -378,7 +378,7 @@ export function LotesPanel({
               <Card key={l.id} className={styles.loteCard}>
                 <div className={styles.ltop}>
                   <div><div className={styles.emp}>{l.empresa}</div><div className={styles.desc}>{l.descripcion}</div></div>
-                  {l.anulado ? <Badge tone="error">Anulado</Badge> : <Badge tone="success">Activo</Badge>}
+                  {l.anulado ? <span title={l.anuladoMotivo ?? undefined} className="cursor-help"><Badge tone="error">Anulado</Badge></span> : <Badge tone="success">Activo</Badge>}
                 </div>
                 <div className={styles.meta}>
                   <span>{l.cantidad} boletos</span><span>·</span>
@@ -404,23 +404,23 @@ export function LotesPanel({
           })}
         </div>
       ) : (
-        <div className={`card ${styles.list}`}>
-          <div className={`${styles.trow} ${styles.thead}`}>
-            <span>Lote</span><span>Progreso</span><span className={styles.tHideSm}>Vence</span><span className={styles.tHideSm}>Estado</span><span />
+        <div className={`card ${styles.list}`} role="table" aria-label="Lotes">
+          <div className={`${styles.trow} ${styles.thead}`} role="row">
+            <span role="columnheader">Lote</span><span role="columnheader">Progreso</span><span role="columnheader" className={styles.tHideSm}>Vence</span><span role="columnheader" className={styles.tHideSm}>Estado</span><span role="columnheader" />
           </div>
           {lista.map((l) => {
             const pct = l.cantidad > 0 ? Math.round((l.canjeados / l.cantidad) * 100) : 0;
             const vi = venceInfo(hoy, l.fechaVencimiento);
             return (
-              <div className={`${styles.trow} ${styles.trowBody}`} key={l.id}>
-                <div className={styles.lname}><b>{l.descripcion}</b><span>{l.empresa}</span></div>
-                <div className={styles.tprog}>
+              <div className={`${styles.trow} ${styles.trowBody}`} key={l.id} role="row">
+                <div role="cell" className={styles.lname}><b>{l.descripcion}</b><span>{l.empresa}</span></div>
+                <div role="cell" className={styles.tprog}>
                   <span className={styles.track}><span className={`${styles.fill} ${l.anulado ? styles.fillMuted : ""}`} style={{ width: `${pct}%` }} /></span>
                   <small>{l.canjeados}/{l.cantidad}</small>
                 </div>
-                <div className={styles.tHideSm}><span className={`${styles.sem} ${vi.cls}`} /> {fmtFecha(l.fechaVencimiento)}</div>
-                <div className={styles.tHideSm}>{l.anulado ? <Badge tone="error">Anulado</Badge> : <Badge tone="success">Activo</Badge>}</div>
-                <div className={styles.center}>{menuNode(l, true)}</div>
+                <div role="cell" className={styles.tHideSm}><span className={`${styles.sem} ${vi.cls}`} /> {fmtFecha(l.fechaVencimiento)}</div>
+                <div role="cell" className={styles.tHideSm}>{l.anulado ? <span title={l.anuladoMotivo ?? undefined} className="cursor-help"><Badge tone="error">Anulado</Badge></span> : <Badge tone="success">Activo</Badge>}</div>
+                <div role="cell" className={styles.center}>{menuNode(l, true)}</div>
               </div>
             );
           })}

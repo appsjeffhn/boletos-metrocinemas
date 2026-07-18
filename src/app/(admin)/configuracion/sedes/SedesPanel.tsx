@@ -64,13 +64,13 @@ export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
     const open = menuFor === s.id;
     return (
       <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" onClick={() => setMenuFor(open ? null : s.id)}>
+        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : s.id)}>
           <Dots />
         </button>
         {open && (
           <>
             <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu}>
+            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
               <button type="button" onClick={() => { setMenuFor(null); setEditarError(null); setEditando(s); }}>Editar</button>
               {s.activo ? (
                 <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setAlternando(s); }}>Desactivar</button>
@@ -89,7 +89,7 @@ export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
       <div className={styles.toolbar}>
         <div className={styles.search}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          <input placeholder="Buscar sede…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <input placeholder="Buscar sede…" aria-label="Buscar sede" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
         </div>
         <select className={styles.fsel} value={fEstado} onChange={(e) => setFEstado(e.target.value as typeof fEstado)} aria-label="Filtrar por estado">
           <option value="todos">Todas</option>
@@ -128,15 +128,15 @@ export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
           ))}
         </div>
       ) : (
-        <div className={`card ${styles.list}`}>
-          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1fr 48px" }}>
-            <span>Sede</span><span>Estado</span><span />
+        <div className={`card ${styles.list}`} role="table" aria-label="Sedes">
+          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1fr 48px" }} role="row">
+            <span role="columnheader">Sede</span><span role="columnheader">Estado</span><span role="columnheader" />
           </div>
           {lista.map((s) => (
-            <div className={`${styles.trow} ${styles.trowBody}`} style={{ gridTemplateColumns: "2fr 1fr 48px" }} key={s.id}>
-              <div className={styles.lname}><b>{s.nombre}</b></div>
-              <div>{s.activo ? <Badge tone="success">Activa</Badge> : <Badge tone="neutral">Inactiva</Badge>}</div>
-              <div className={styles.center}>{menuNode(s)}</div>
+            <div className={`${styles.trow} ${styles.trowBody}`} style={{ gridTemplateColumns: "2fr 1fr 48px" }} key={s.id} role="row">
+              <div className={styles.lname} role="cell"><b>{s.nombre}</b></div>
+              <div role="cell">{s.activo ? <Badge tone="success">Activa</Badge> : <Badge tone="neutral">Inactiva</Badge>}</div>
+              <div className={styles.center} role="cell">{menuNode(s)}</div>
             </div>
           ))}
         </div>
