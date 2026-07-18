@@ -1,10 +1,11 @@
 "use client";
 import { useState, useTransition } from "react";
-import { Table, Th, Td } from "@/components/ui/Table";
-import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { editarEmpresa, eliminarEmpresa, type EmpresaActionResult } from "./actions";
+import { crearEmpresa, editarEmpresa, eliminarEmpresa, type EmpresaActionResult } from "./actions";
+import styles from "@/components/collection.module.css";
 
 type Empresa = {
   id: number;
@@ -14,7 +15,16 @@ type Empresa = {
   telefono: string | null;
 };
 
+const Dots = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.7" fill="currentColor" /><circle cx="12" cy="12" r="1.7" fill="currentColor" /><circle cx="19" cy="12" r="1.7" fill="currentColor" /></svg>
+);
+
 export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
+  const [vista, setVista] = useState<"cards" | "tabla">("cards");
+  const [filtro, setFiltro] = useState("");
+  const [menuFor, setMenuFor] = useState<number | null>(null);
+  const [creando, setCreando] = useState(false);
+  const [crearKey, setCrearKey] = useState(0);
   const [editando, setEditando] = useState<Empresa | null>(null);
   const [eliminando, setEliminando] = useState<Empresa | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +34,14 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
     setEditando(null);
     setEliminando(null);
     setError(null);
+  }
+
+  function onCrear(formData: FormData) {
+    startTransition(async () => {
+      await crearEmpresa(formData);
+      setCrearKey((k) => k + 1);
+      setCreando(false);
+    });
   }
 
   function guardarEdicion(formData: FormData) {
@@ -50,64 +68,110 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
     });
   }
 
+  const q = filtro.trim().toLowerCase();
+  const lista = empresas.filter((e) => !q || e.nombre.toLowerCase().includes(q));
+
+  function menuNode(e: Empresa) {
+    const open = menuFor === e.id;
+    return (
+      <div className={styles.menuWrap}>
+        <button type="button" className={styles.icobtn} aria-label="Acciones" onClick={() => setMenuFor(open ? null : e.id)}>
+          <Dots />
+        </button>
+        {open && (
+          <>
+            <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
+            <div className={styles.menu}>
+              <button type="button" onClick={() => { setMenuFor(null); setError(null); setEditando(e); }}>Editar</button>
+              <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setError(null); setEliminando(e); }}>Eliminar</button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
-      <Table>
-        <thead>
-          <tr>
-            <Th>Nombre</Th>
-            <Th>Código</Th>
-            <Th>Contacto</Th>
-            <Th>Teléfono</Th>
-            <Th>Acciones</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {empresas.length === 0 && (
-            <tr>
-              <Td colSpan={5} className="text-center text-[var(--black-60)]">
-                Aún no hay empresas registradas.
-              </Td>
-            </tr>
-          )}
-          {empresas.map((e) => (
-            <tr key={e.id}>
-              <Td className="font-semibold">{e.nombre}</Td>
-              <Td>
-                <span className="font-mono text-xs text-[var(--blue-hover)]">M{e.prefijo}-</span>
-              </Td>
-              <Td>{e.contacto || <span className="text-[var(--black-40)]">—</span>}</Td>
-              <Td>{e.telefono || <span className="text-[var(--black-40)]">—</span>}</Td>
-              <Td>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="btn-sm"
-                    onClick={() => {
-                      setError(null);
-                      setEditando(e);
-                    }}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    className="btn-sm"
-                    onClick={() => {
-                      setError(null);
-                      setEliminando(e);
-                    }}
-                  >
-                    Eliminar
-                  </Button>
+      <div className={styles.toolbar}>
+        <div className={styles.search}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" /><path d="m20 20-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+          <input placeholder="Buscar empresa…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+        </div>
+        <span className={styles.spacer} />
+        <div className={styles.seg}>
+          <button type="button" className={vista === "cards" ? styles.on : ""} onClick={() => setVista("cards")}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="13" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="3" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /><rect x="13" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" /></svg>
+            Tarjetas
+          </button>
+          <button type="button" className={vista === "tabla" ? styles.on : ""} onClick={() => setVista("tabla")}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            Tabla
+          </button>
+        </div>
+        <Button variant="primary" onClick={() => setCreando(true)}>+ Nueva empresa</Button>
+      </div>
+
+      {lista.length === 0 ? (
+        <Card><p className={styles.empty}>{q ? "Ninguna empresa coincide con la búsqueda." : "Aún no hay empresas registradas."}</p></Card>
+      ) : vista === "cards" ? (
+        <div className={styles.grid}>
+          {lista.map((e) => (
+            <Card key={e.id} className={styles.itemCard}>
+              <div className={styles.top}>
+                <div>
+                  <div className={styles.eyebrow}>M{e.prefijo}-</div>
+                  <div className={styles.title}>{e.nombre}</div>
                 </div>
-              </Td>
-            </tr>
+              </div>
+              <div className={styles.meta}>
+                <span>{e.contacto || "—"}</span>
+                <span>·</span>
+                <span>{e.telefono || "—"}</span>
+              </div>
+              <div className={styles.acts}>
+                <span className={styles.actSpacer} />
+                {menuNode(e)}
+              </div>
+            </Card>
           ))}
-        </tbody>
-      </Table>
+        </div>
+      ) : (
+        <div className={`card ${styles.list}`}>
+          <div className={`${styles.trow} ${styles.thead}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }}>
+            <span>Empresa</span>
+            <span className={styles.tHideSm}>Contacto</span>
+            <span className={styles.tHideSm}>Teléfono</span>
+            <span />
+          </div>
+          {lista.map((e) => (
+            <div className={`${styles.trow} ${styles.trowBody}`} style={{ gridTemplateColumns: "2fr 1.2fr 1fr 48px" }} key={e.id}>
+              <div className={styles.lname}><b>{e.nombre}</b><span>M{e.prefijo}-</span></div>
+              <div className={styles.tHideSm}>{e.contacto || "—"}</div>
+              <div className={styles.tHideSm}>{e.telefono || "—"}</div>
+              <div className={styles.center}>{menuNode(e)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal open={creando} onClose={() => setCreando(false)} title="Nueva empresa">
+        <form key={crearKey} action={onCrear} className="space-y-3">
+          <Input label="Nombre" name="nombre" placeholder="Nombre de la empresa" required />
+          <div className="flex flex-col gap-1">
+            <Input label="Prefijo (opcional)" name="prefijo" placeholder="ej. MOK" maxLength={6} />
+            <p className="text-xs text-[var(--black-60)]">
+              Se antepone M; ej. MOK → MMOK-
+            </p>
+          </div>
+          <Input label="Contacto" name="contacto" placeholder="Nombre de contacto" />
+          <Input label="Teléfono" name="telefono" placeholder="Teléfono" />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setCreando(false)} disabled={pending}>Cancelar</Button>
+            <Button type="submit" variant="primary" disabled={pending}>{pending ? "Agregando…" : "Agregar"}</Button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal open={editando !== null} onClose={cerrarModales} title="Editar empresa">
         {editando && (
