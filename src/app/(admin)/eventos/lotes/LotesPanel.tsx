@@ -181,7 +181,7 @@ function ProductosEditor({
         </div>
       ))}
       <div>
-        <Button type="button" variant="secondary" className="text-xs px-3 py-1.5"
+        <Button type="button" variant="secondary" className="btn-sm"
           onClick={() => setFilas((prev) => [...prev, nuevaFila()])}>
           + Agregar producto
         </Button>
@@ -370,19 +370,19 @@ export function LotesPanel({
               <Td>
                 <div className="flex flex-wrap gap-2">
                   <a
-                    className="btn btn-secondary text-xs px-3 py-1.5"
+                    className="btn btn-secondary btn-sm"
                     href={`/api/lote/${l.id}/pdf`}
                   >
                     Imprimir/PDF
                   </a>
-                  <a className="btn btn-secondary text-xs px-3 py-1.5" href={`/api/lote/${l.id}/qr-zip`}>
+                  <a className="btn btn-secondary btn-sm" href={`/api/lote/${l.id}/qr-zip`}>
                     Descargar QR (ZIP)
                   </a>
                   {!l.anulado && !l.tieneCanjes && (
                     <Button
                       type="button"
                       variant="secondary"
-                      className="text-xs px-3 py-1.5"
+                      className="btn-sm"
                       onClick={() => {
                         setEditarError(null);
                         setEditando(l);
@@ -394,7 +394,7 @@ export function LotesPanel({
                   <Button
                     type="button"
                     variant="secondary"
-                    className="text-xs px-3 py-1.5"
+                    className="btn-sm"
                     onClick={() => { setEditarProdError(null); setEditandoProd(l); }}
                   >
                     Productos
@@ -403,7 +403,7 @@ export function LotesPanel({
                     <Button
                       type="button"
                       variant="danger"
-                      className="text-xs px-3 py-1.5"
+                      className="btn-sm"
                       onClick={() => {
                         setEliminarError(null);
                         setEliminando(l);
@@ -416,7 +416,7 @@ export function LotesPanel({
                     <Button
                       type="button"
                       variant="danger"
-                      className="text-xs px-3 py-1.5"
+                      className="btn-sm"
                       onClick={() => {
                         setAnularError(null);
                         setAnulando(l);

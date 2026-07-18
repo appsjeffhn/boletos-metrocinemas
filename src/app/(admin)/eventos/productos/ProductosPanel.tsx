@@ -78,10 +78,10 @@ export function ProductosPanel({ productos }: { productos: ProductoCatalogo[] })
               <Td>{p.activo ? <Badge tone="success">Activo</Badge> : <Badge tone="neutral">Inactivo</Badge>}</Td>
               <Td>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" className="text-xs px-3 py-1.5"
+                  <Button type="button" variant="secondary" className="btn-sm"
                     onClick={() => { setEditarError(null); setEditando(p); }}>Editar</Button>
                   {p.activo && (
-                    <Button type="button" variant="danger" className="text-xs px-3 py-1.5"
+                    <Button type="button" variant="danger" className="btn-sm"
                       onClick={() => { setDesactivarError(null); setDesactivando(p); }}>
                       Desactivar
                     </Button>

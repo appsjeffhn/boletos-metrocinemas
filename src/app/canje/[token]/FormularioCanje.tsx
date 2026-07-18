@@ -35,10 +35,15 @@ export default function FormularioCanje(
         style={{ background: "var(--success-150)" }}
       >
         <Card className="max-w-sm w-full text-center space-y-4">
-          <p className="text-2xl font-bold" style={{ color: "var(--success-150)" }}>✓ Canje exitoso</p>
-          <p className="font-mono text-lg">{state.codigo}</p>
+          <div className="mx-auto grid place-items-center" style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--success-10)" }}>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" style={{ color: "var(--success-150)" }}><path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </div>
+          <div>
+            <p className="text-xl font-bold" style={{ color: "var(--success-150)" }}>Canje exitoso</p>
+            <p className="font-mono text-lg mt-1">{state.codigo}</p>
+          </div>
           {listaProductos}
-          <a href="/taquilla" className="btn btn-secondary w-full">Escanear otro</a>
+          <a href="/taquilla" className="btn btn-primary btn-lg w-full">Escanear otro</a>
         </Card>
       </main>
     );
@@ -60,7 +65,7 @@ export default function FormularioCanje(
             <Input name="portadorNombre" label="Nombre del portador" required />
             <Input name="portadorDni" label="DNI del portador" required />
             {state?.error && <p className="text-sm" style={{ color: "var(--error-150)" }}>{state.error}</p>}
-            <Button type="submit" disabled={pending} className="w-full">
+            <Button type="submit" size="lg" disabled={pending} className="w-full">
               {pending ? "Canjeando…" : "Confirmar canje"}
             </Button>
           </form>

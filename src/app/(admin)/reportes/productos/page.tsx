@@ -98,7 +98,7 @@ export default async function ReporteProductosPage(
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold">Detalle de canjes</h2>
-          <a className="btn btn-secondary text-xs px-3 py-1.5" href={`/reportes/productos/exportar${qs ? `?${qs}` : ""}`}>
+          <a className="btn btn-secondary btn-sm" href={`/reportes/productos/exportar${qs ? `?${qs}` : ""}`}>
             Exportar CSV
           </a>
         </div>

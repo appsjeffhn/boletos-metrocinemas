@@ -32,7 +32,10 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
         style={{ background: "var(--error-150)" }}
       >
         <Card className="max-w-sm w-full text-center space-y-4">
-          <p className="text-2xl font-bold" style={{ color: "var(--error-150)" }}>✕ {msg}</p>
+          <div className="mx-auto grid place-items-center" style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--error-10)" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ color: "var(--error-150)" }}><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+          </div>
+          <p className="text-xl font-bold" style={{ color: "var(--error-150)" }}>{msg}</p>
           {r.razon === "canjeado" && canje && (
             <div className="text-left text-sm space-y-1 pt-2 border-t" style={{ borderColor: "var(--black-10)" }}>
               <p><span className="font-semibold">Sede:</span> {canje.sede ?? "—"}</p>
@@ -41,7 +44,7 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
               <p><span className="font-semibold">Operador:</span> {canje.operador ?? "—"}</p>
             </div>
           )}
-          <a href="/taquilla" className="btn btn-secondary w-full">Escanear otro</a>
+          <a href="/taquilla" className="btn btn-primary btn-lg w-full">Escanear otro</a>
         </Card>
       </main>
     );

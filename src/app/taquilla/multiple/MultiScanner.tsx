@@ -182,7 +182,7 @@ export default function MultiScanner() {
           })}
         </Card>
 
-        <Button type="button" onClick={reiniciar} className="w-full">Escanear otro grupo</Button>
+        <Button type="button" size="lg" onClick={reiniciar} className="w-full">Escanear otro grupo</Button>
       </div>
     );
   }
@@ -258,6 +258,7 @@ export default function MultiScanner() {
         {result?.error && <p className="text-sm" style={{ color: "var(--error-150)" }}>{result.error}</p>}
         <Button
           type="button"
+          size="lg"
           onClick={confirmar}
           disabled={pending || items.length === 0 || !portadorNombre.trim() || !portadorDni.trim()}
           className="w-full"

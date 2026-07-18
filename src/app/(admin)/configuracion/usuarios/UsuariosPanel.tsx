@@ -200,7 +200,7 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
                     <Button
                       type="button"
                       variant="secondary"
-                      className="text-xs px-3 py-1.5"
+                      className="btn-sm"
                       onClick={() => {
                         setEditarErrorMsg(null);
                         setEditando(usr);
@@ -211,7 +211,7 @@ export function UsuariosPanel({ usuarios, sedes }: { usuarios: UsuarioListado[];
                     <Button
                       type="button"
                       variant={usr.activo ? "danger" : "secondary"}
-                      className="text-xs px-3 py-1.5"
+                      className="btn-sm"
                       disabled={pending}
                       onClick={() => onToggle(usr.id)}
                     >

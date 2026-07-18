@@ -69,9 +69,9 @@ export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
               <Td>{s.activo ? <Badge tone="success">Activa</Badge> : <Badge tone="neutral">Inactiva</Badge>}</Td>
               <Td>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" className="text-xs px-3 py-1.5"
+                  <Button type="button" variant="secondary" className="btn-sm"
                     onClick={() => { setEditarError(null); setEditando(s); }}>Editar</Button>
-                  <Button type="button" variant={s.activo ? "danger" : "secondary"} className="text-xs px-3 py-1.5"
+                  <Button type="button" variant={s.activo ? "danger" : "secondary"} className="btn-sm"
                     onClick={() => setAlternando(s)}>{s.activo ? "Desactivar" : "Activar"}</Button>
                 </div>
               </Td>

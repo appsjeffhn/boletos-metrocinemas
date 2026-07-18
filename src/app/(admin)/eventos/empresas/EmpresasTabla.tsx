@@ -83,7 +83,7 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
                   <Button
                     type="button"
                     variant="secondary"
-                    className="text-xs px-3 py-1.5"
+                    className="btn-sm"
                     onClick={() => {
                       setError(null);
                       setEditando(e);
@@ -94,7 +94,7 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
                   <Button
                     type="button"
                     variant="danger"
-                    className="text-xs px-3 py-1.5"
+                    className="btn-sm"
                     onClick={() => {
                       setError(null);
                       setEliminando(e);
