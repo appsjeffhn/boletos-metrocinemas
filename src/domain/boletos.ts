@@ -3,6 +3,8 @@ import { alias } from "drizzle-orm/pg-core";
 import type { DrizzleDb } from "@/db/client";
 import { lotes, boletos, empresas, sedes, usuarios, loteSedes, loteProductos } from "@/db/schema";
 import { generarCodigo, generarToken } from "@/lib/codigo";
+import { hoyISOEn } from "@/lib/fechas";
+import { ZONA_DEFAULT } from "@/lib/zonasHorarias";
 
 export type NuevoLote = {
   empresaId: number;
@@ -214,12 +216,6 @@ export async function anularLote(
   return { anulados: actualizados.length };
 }
 
-function hoyISO(): string {
-  // Fecha calendario en Honduras (UTC-6), no UTC: usar UTC podía marcar un
-  // boleto como vencido hasta 6h antes de tiempo el día de su vencimiento.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Tegucigalpa" }).format(new Date());
-}
-
 export type BoletoInfo = {
   codigo: string;
   empresa: string;
@@ -269,7 +265,7 @@ function aInfo(row: NonNullable<Awaited<ReturnType<typeof cargar>>>): BoletoInfo
   };
 }
 
-export async function obtenerBoletoPorToken(db: DrizzleDb, token: string, hoy = hoyISO()) {
+export async function obtenerBoletoPorToken(db: DrizzleDb, token: string, hoy = hoyISOEn(ZONA_DEFAULT)) {
   const row = await cargar(db, token);
   if (!row) return { ok: false as const, razon: "invalido" as Razon };
   const info = aInfo(row);
@@ -283,7 +279,7 @@ export type DatosCanje = {
   sedeId: number; portadorNombre: string; portadorDni: string; usuarioId: number;
 };
 
-export async function canjearBoleto(db: DrizzleDb, token: string, datos: DatosCanje, hoy = hoyISO()) {
+export async function canjearBoleto(db: DrizzleDb, token: string, datos: DatosCanje, hoy = hoyISOEn(ZONA_DEFAULT)) {
   const previo = await obtenerBoletoPorToken(db, token, hoy);
   if (!previo.ok) return { ok: false as const, razon: previo.razon };
 
@@ -324,7 +320,7 @@ export async function canjearMultiple(
   db: DrizzleDb,
   tokens: string[],
   datos: DatosCanje,
-  hoy = hoyISO(),
+  hoy = hoyISOEn(ZONA_DEFAULT),
 ): Promise<{ resultados: ResultadoCanjeMultiple[]; exitosos: number; fallidos: number }> {
   const unicos = Array.from(new Set(tokens));
   const resultados: ResultadoCanjeMultiple[] = [];

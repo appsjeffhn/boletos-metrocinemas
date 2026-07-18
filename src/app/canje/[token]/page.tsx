@@ -4,6 +4,8 @@ import { obtenerBoletoPorToken } from "@/domain/boletos";
 import { productosPorToken } from "@/domain/loteProductosQuery";
 import { getCurrentUser } from "@/lib/session";
 import { Card } from "@/components/ui/Card";
+import { hoyISOEn } from "@/lib/fechas";
+import { zonaHoraria } from "@/domain/configuracion";
 import FormularioCanje from "./FormularioCanje";
 
 const MENSAJES = {
@@ -18,7 +20,8 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
   const u = await getCurrentUser();
   if (!u) redirect("/login");
   const { token } = await params;
-  const r = await obtenerBoletoPorToken(db, token);
+  const hoy = hoyISOEn(await zonaHoraria(db));
+  const r = await obtenerBoletoPorToken(db, token, hoy);
 
   if (!r.ok) {
     const msg = MENSAJES[r.razon];

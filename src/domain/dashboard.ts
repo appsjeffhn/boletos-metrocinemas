@@ -1,16 +1,8 @@
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import type { DrizzleDb } from "@/db/client";
 import { boletos, empresas, lotes, sedes } from "@/db/schema";
-
-function hoyISO(): string {
-  // Misma lógica que src/domain/boletos.ts: fecha calendario en Honduras
-  // (America/Tegucigalpa), no UTC.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Tegucigalpa" }).format(new Date());
-}
-
-function fechaISOTegucigalpa(fecha: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Tegucigalpa" }).format(fecha);
-}
+import { hoyISOEn, fechaISOEn } from "@/lib/fechas";
+import { zonaHoraria } from "@/domain/configuracion";
 
 export type DashboardKpis = {
   empresas: number;
@@ -32,6 +24,8 @@ export type DashboardKpis = {
 };
 
 export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
+  const tz = await zonaHoraria(db);
+
   const [{ count: totalEmpresas }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(empresas);
@@ -56,9 +50,9 @@ export async function dashboardKpis(db: DrizzleDb): Promise<DashboardKpis> {
     .select({ fecha: boletos.canjeFecha })
     .from(boletos)
     .where(eq(boletos.estado, "canjeado"));
-  const hoy = hoyISO();
+  const hoy = hoyISOEn(tz);
   const canjesHoy = canjeadosFechas.filter(
-    (r) => r.fecha && fechaISOTegucigalpa(r.fecha) === hoy,
+    (r) => r.fecha && fechaISOEn(r.fecha, tz) === hoy,
   ).length;
 
   const canjesPorSede = await db

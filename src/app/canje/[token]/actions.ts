@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { canjearBoleto } from "@/domain/boletos";
 import { getCurrentUser } from "@/lib/session";
+import { hoyISOEn } from "@/lib/fechas";
+import { zonaHoraria } from "@/domain/configuracion";
 
 export type CanjeState = { error?: string; ok?: true; codigo?: string };
 
@@ -23,12 +25,13 @@ export async function confirmarCanje(
     return { error: "Nombre y DNI del portador son obligatorios." };
   }
 
+  const hoy = hoyISOEn(await zonaHoraria(db));
   const r = await canjearBoleto(db, token, {
     sedeId: u.activeSedeId,
     usuarioId: u.userId,
     portadorNombre,
     portadorDni,
-  });
+  }, hoy);
   if (!r.ok) {
     const msg = { invalido: "Boleto inválido o falso", canjeado: "Este boleto ya fue canjeado",
       anulado: "Boleto anulado", vencido: "Boleto vencido",

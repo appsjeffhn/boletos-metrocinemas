@@ -5,6 +5,8 @@ import { canjearMultiple, obtenerBoletoPorToken, type ResultadoCanjeMultiple } f
 import { productosPorToken } from "@/domain/loteProductosQuery";
 import type { ProductoBoleto } from "@/domain/totalizar";
 import { getCurrentUser } from "@/lib/session";
+import { hoyISOEn } from "@/lib/fechas";
+import { zonaHoraria } from "@/domain/configuracion";
 
 export type CanjeInfo = {
   sede: string | null;
@@ -35,7 +37,8 @@ export async function infoBoleto(token: string): Promise<InfoBoleto> {
   const u = await getCurrentUser();
   if (!u?.puedeTaquilla) return { token, codigo: null, estado: "invalido", productos: [] };
 
-  const r = await obtenerBoletoPorToken(db, token);
+  const hoy = hoyISOEn(await zonaHoraria(db));
+  const r = await obtenerBoletoPorToken(db, token, hoy);
   const prods = await productosPorToken(db, token);
   const productos: ProductoBoleto[] = prods.map((p) => ({ nombre: p.nombre, cantidadPorBoleto: p.cantidadPorBoleto }));
   if (r.ok) return { token, codigo: r.boleto.codigo, estado: "valido", productos };
@@ -87,12 +90,13 @@ export async function confirmarCanjeMultiple(
     return { error: "No hay boletos escaneados." };
   }
 
+  const hoy = hoyISOEn(await zonaHoraria(db));
   const r = await canjearMultiple(db, unicos, {
     sedeId: u.activeSedeId,
     usuarioId: u.userId,
     portadorNombre: nombre,
     portadorDni: dni,
-  });
+  }, hoy);
 
   return { resultados: r.resultados, exitosos: r.exitosos, fallidos: r.fallidos };
 }
