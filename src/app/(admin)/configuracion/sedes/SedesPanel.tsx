@@ -5,19 +5,15 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { RowMenu } from "@/components/RowMenu";
 import type { SedeAdmin } from "@/domain/sedesQuery";
 import { crearSedeAction, editarSedeAction, toggleSedeActivaAction, type SedeActionResult } from "./actions";
 import styles from "@/components/collection.module.css";
-
-const Dots = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.7" fill="currentColor" /><circle cx="12" cy="12" r="1.7" fill="currentColor" /><circle cx="19" cy="12" r="1.7" fill="currentColor" /></svg>
-);
 
 export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
   const [vista, setVista] = useState<"cards" | "tabla">("tabla");
   const [filtro, setFiltro] = useState("");
   const [fEstado, setFEstado] = useState<"todos" | "activa" | "inactiva">("todos");
-  const [menuFor, setMenuFor] = useState<number | null>(null);
   const [creando, setCreando] = useState(false);
   const [crearError, setCrearError] = useState<string | null>(null);
   const [crearKey, setCrearKey] = useState(0);
@@ -61,26 +57,19 @@ export function SedesPanel({ sedes }: { sedes: SedeAdmin[] }) {
   });
 
   function menuNode(s: SedeAdmin) {
-    const open = menuFor === s.id;
     return (
-      <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : s.id)}>
-          <Dots />
-        </button>
-        {open && (
+      <RowMenu>
+        {(close) => (
           <>
-            <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
-              <button type="button" onClick={() => { setMenuFor(null); setEditarError(null); setEditando(s); }}>Editar</button>
-              {s.activo ? (
-                <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setAlternando(s); }}>Desactivar</button>
-              ) : (
-                <button type="button" onClick={() => { setMenuFor(null); setAlternando(s); }}>Activar</button>
-              )}
-            </div>
+            <button type="button" role="menuitem" onClick={() => { close(); setEditarError(null); setEditando(s); }}>Editar</button>
+            {s.activo ? (
+              <button type="button" role="menuitem" className={styles.danger} onClick={() => { close(); setAlternando(s); }}>Desactivar</button>
+            ) : (
+              <button type="button" role="menuitem" onClick={() => { close(); setAlternando(s); }}>Activar</button>
+            )}
           </>
         )}
-      </div>
+      </RowMenu>
     );
   }
 

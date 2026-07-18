@@ -3,6 +3,7 @@ import { useActionState } from "react";
 import { BrandHeader } from "@/components/BrandHeader";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { DniInput } from "@/components/DniInput";
 import { Button } from "@/components/ui/Button";
 import { confirmarCanje, type CanjeState } from "./actions";
 
@@ -63,7 +64,7 @@ export default function FormularioCanje(
         <Card>
           <form action={action} className="space-y-4">
             <Input name="portadorNombre" label="Nombre del portador" required />
-            <Input name="portadorDni" label="DNI del portador" required />
+            <DniInput name="portadorDni" required />
             {state?.error && <p className="text-sm" style={{ color: "var(--error-150)" }}>{state.error}</p>}
             <Button type="submit" size="lg" disabled={pending} className="w-full">
               {pending ? "Canjeando…" : "Confirmar canje"}

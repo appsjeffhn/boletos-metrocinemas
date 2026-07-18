@@ -10,21 +10,28 @@ import { empresaTieneLotesActivos } from "@/domain/empresasQuery";
 
 export type EmpresaActionResult = { error?: string } | void;
 
-export async function crearEmpresa(formData: FormData): Promise<void> {
+export async function crearEmpresa(formData: FormData): Promise<EmpresaActionResult> {
   const u = await getCurrentUser();
   if (!u?.puedeAdmin) redirect("/login");
 
   const nombre = String(formData.get("nombre") ?? "").trim();
-  if (!nombre) return;
+  if (!nombre) return { error: "El nombre es obligatorio." };
   const prefijoRaw = String(formData.get("prefijo") ?? "").trim();
   const prefijo = normalizarPrefijo(prefijoRaw || nombre);
   const contacto = String(formData.get("contacto") ?? "").trim() || null;
   const telefono = String(formData.get("telefono") ?? "").trim() || null;
 
-  await db
+  // El nombre es único: onConflictDoNothing + returning() deja el arreglo vacío
+  // si ya existe, y así distinguimos el duplicado para avisar al usuario.
+  const insertado = await db
     .insert(empresas)
     .values({ nombre, prefijo, contacto, telefono })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: empresas.id });
+
+  if (insertado.length === 0) {
+    return { error: "Ya existe una empresa con ese nombre." };
+  }
 
   revalidatePath("/eventos/empresas");
 }

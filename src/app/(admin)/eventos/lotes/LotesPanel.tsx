@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { RowMenu } from "@/components/RowMenu";
 import type { LoteListado } from "@/domain/lotesQuery";
 import type { ProductoCatalogo } from "@/domain/productosQuery";
 import type { ProductoDeLote } from "@/domain/loteProductosQuery";
@@ -183,9 +184,6 @@ function venceInfo(hoy: string, venc: string): { cls: string; label: string } {
   if (dias <= 7) return { cls: styles.sema, label: `Vence en ${dias} día${dias === 1 ? "" : "s"}` };
   return { cls: styles.semg, label: `Vence ${fmtFecha(venc)}` };
 }
-const Dots = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.7" fill="currentColor" /><circle cx="12" cy="12" r="1.7" fill="currentColor" /><circle cx="19" cy="12" r="1.7" fill="currentColor" /></svg>
-);
 
 export function LotesPanel({
   lotes,
@@ -206,7 +204,6 @@ export function LotesPanel({
   const [filtro, setFiltro] = useState("");
   const [fEstado, setFEstado] = useState<"todos" | "activo" | "anulado">("todos");
   const [fVenc, setFVenc] = useState<"todos" | "pronto" | "vencido">("todos");
-  const [menuFor, setMenuFor] = useState<number | null>(null);
   const [creando, setCreando] = useState(false);
   const [empresasState, setEmpresasState] = useState<Empresa[]>(empresas);
   const [empresaSel, setEmpresaSel] = useState("");
@@ -301,38 +298,31 @@ export function LotesPanel({
   });
 
   function menuNode(l: LoteListado, full: boolean) {
-    const open = menuFor === l.id;
     return (
-      <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : l.id)}>
-          <Dots />
-        </button>
-        {open && (
+      <RowMenu>
+        {(close) => (
           <>
-            <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
-              {full && (
-                <>
-                  <a href={`/api/lote/${l.id}/pdf`}>Imprimir / PDF</a>
-                  <a href={`/api/lote/${l.id}/qr-zip`}>Descargar QR (ZIP)</a>
-                  <hr />
-                </>
-              )}
-              {!l.anulado && !l.tieneCanjes && (
-                <button type="button" onClick={() => { setMenuFor(null); setEditarError(null); setEditando(l); }}>Editar</button>
-              )}
-              <button type="button" onClick={() => { setMenuFor(null); setEditarProdError(null); setEditandoProd(l); }}>Productos</button>
-              {!l.anulado && (
-                <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setAnularError(null); setAnulando(l); }}>Anular</button>
-              )}
-              {!l.tieneCanjes && (
-                <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setEliminarError(null); setEliminando(l); }}>Eliminar</button>
-              )}
-              {l.tieneCanjes && <p className={styles.note}>Con canjes: no editable ni eliminable</p>}
-            </div>
+            {full && (
+              <>
+                <a href={`/api/lote/${l.id}/pdf`} role="menuitem">Imprimir / PDF</a>
+                <a href={`/api/lote/${l.id}/qr-zip`} role="menuitem">Descargar QR (ZIP)</a>
+                <hr />
+              </>
+            )}
+            {!l.anulado && !l.tieneCanjes && (
+              <button type="button" role="menuitem" onClick={() => { close(); setEditarError(null); setEditando(l); }}>Editar</button>
+            )}
+            <button type="button" role="menuitem" onClick={() => { close(); setEditarProdError(null); setEditandoProd(l); }}>Productos</button>
+            {!l.anulado && (
+              <button type="button" role="menuitem" className={styles.danger} onClick={() => { close(); setAnularError(null); setAnulando(l); }}>Anular</button>
+            )}
+            {!l.tieneCanjes && (
+              <button type="button" role="menuitem" className={styles.danger} onClick={() => { close(); setEliminarError(null); setEliminando(l); }}>Eliminar</button>
+            )}
+            {l.tieneCanjes && <p className={styles.note}>Con canjes: no editable ni eliminable</p>}
           </>
         )}
-      </div>
+      </RowMenu>
     );
   }
 

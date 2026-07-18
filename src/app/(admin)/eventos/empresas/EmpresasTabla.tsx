@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { RowMenu } from "@/components/RowMenu";
 import { crearEmpresa, editarEmpresa, eliminarEmpresa, type EmpresaActionResult } from "./actions";
 import styles from "@/components/collection.module.css";
 
@@ -15,16 +16,12 @@ type Empresa = {
   telefono: string | null;
 };
 
-const Dots = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.7" fill="currentColor" /><circle cx="12" cy="12" r="1.7" fill="currentColor" /><circle cx="19" cy="12" r="1.7" fill="currentColor" /></svg>
-);
-
 export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
   const [vista, setVista] = useState<"cards" | "tabla">("cards");
   const [filtro, setFiltro] = useState("");
-  const [menuFor, setMenuFor] = useState<number | null>(null);
   const [creando, setCreando] = useState(false);
   const [crearKey, setCrearKey] = useState(0);
+  const [crearError, setCrearError] = useState<string | null>(null);
   const [editando, setEditando] = useState<Empresa | null>(null);
   const [eliminando, setEliminando] = useState<Empresa | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +33,19 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
     setError(null);
   }
 
+  function abrirCrear() {
+    setCrearError(null);
+    setCreando(true);
+  }
+
   function onCrear(formData: FormData) {
+    setCrearError(null);
     startTransition(async () => {
-      await crearEmpresa(formData);
+      const resultado: EmpresaActionResult = await crearEmpresa(formData);
+      if (resultado?.error) {
+        setCrearError(resultado.error);
+        return;
+      }
       setCrearKey((k) => k + 1);
       setCreando(false);
     });
@@ -72,22 +79,15 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
   const lista = empresas.filter((e) => !q || e.nombre.toLowerCase().includes(q));
 
   function menuNode(e: Empresa) {
-    const open = menuFor === e.id;
     return (
-      <div className={styles.menuWrap}>
-        <button type="button" className={styles.icobtn} aria-label="Acciones" aria-haspopup="menu" aria-expanded={open} onClick={() => setMenuFor(open ? null : e.id)}>
-          <Dots />
-        </button>
-        {open && (
+      <RowMenu>
+        {(close) => (
           <>
-            <div className={styles.backdrop} onClick={() => setMenuFor(null)} />
-            <div className={styles.menu} role="menu" onKeyDown={(e) => { if (e.key === "Escape") setMenuFor(null); }}>
-              <button type="button" onClick={() => { setMenuFor(null); setError(null); setEditando(e); }}>Editar</button>
-              <button type="button" className={styles.danger} onClick={() => { setMenuFor(null); setError(null); setEliminando(e); }}>Eliminar</button>
-            </div>
+            <button type="button" role="menuitem" onClick={() => { close(); setError(null); setEditando(e); }}>Editar</button>
+            <button type="button" role="menuitem" className={styles.danger} onClick={() => { close(); setError(null); setEliminando(e); }}>Eliminar</button>
           </>
         )}
-      </div>
+      </RowMenu>
     );
   }
 
@@ -109,7 +109,7 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
             Tabla
           </button>
         </div>
-        <Button variant="primary" onClick={() => setCreando(true)}>+ Nueva empresa</Button>
+        <Button variant="primary" onClick={abrirCrear}>+ Nueva empresa</Button>
       </div>
 
       {lista.length === 0 ? (
@@ -166,6 +166,7 @@ export function EmpresasTabla({ empresas }: { empresas: Empresa[] }) {
           </div>
           <Input label="Contacto" name="contacto" placeholder="Nombre de contacto" />
           <Input label="Teléfono" name="telefono" placeholder="Teléfono" />
+          {crearError && <p className="text-sm text-[var(--error-150)]">{crearError}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setCreando(false)} disabled={pending}>Cancelar</Button>
             <Button type="submit" variant="primary" disabled={pending}>{pending ? "Agregando…" : "Agregar"}</Button>

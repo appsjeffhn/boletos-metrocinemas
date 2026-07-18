@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { DniInput } from "@/components/DniInput";
 import { Button } from "@/components/ui/Button";
 import { confirmarCanjeMultiple, infoBoleto, type CanjeMultipleState, type CanjeInfo, type InfoBoleto } from "./actions";
 import { totalizarProductos } from "@/domain/totalizar";
@@ -254,7 +255,7 @@ export default function MultiScanner() {
 
       <Card className="space-y-4">
         <Input label="Nombre del portador" value={portadorNombre} onChange={(e) => setPortadorNombre(e.target.value)} required />
-        <Input label="DNI del portador" value={portadorDni} onChange={(e) => setPortadorDni(e.target.value)} required />
+        <DniInput value={portadorDni} onChange={(e) => setPortadorDni(e.target.value)} required />
         {result?.error && <p className="text-sm" style={{ color: "var(--error-150)" }}>{result.error}</p>}
         <Button
           type="button"
