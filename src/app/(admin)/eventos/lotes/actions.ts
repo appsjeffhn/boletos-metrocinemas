@@ -79,8 +79,8 @@ export async function crearLoteAction(formData: FormData): Promise<LoteActionRes
     sedeIds,
     productos,
   });
-  revalidatePath("/lotes");
-  redirect(`/lotes/${loteId}/imprimir`);
+  revalidatePath("/eventos/lotes");
+  redirect(`/eventos/lotes/${loteId}/imprimir`);
 }
 
 export async function anularLoteAction(formData: FormData): Promise<LoteActionResult> {
@@ -94,7 +94,7 @@ export async function anularLoteAction(formData: FormData): Promise<LoteActionRe
   if (!motivo) return { error: "El motivo de anulación es obligatorio." };
 
   await anularLote(db, loteId, { motivo, usuarioId: u.userId });
-  revalidatePath("/lotes");
+  revalidatePath("/eventos/lotes");
 }
 
 export async function editarLoteAction(formData: FormData): Promise<LoteActionResult> {
@@ -123,8 +123,8 @@ export async function editarLoteAction(formData: FormData): Promise<LoteActionRe
     }
     throw err;
   }
-  revalidatePath("/lotes");
-  redirect(`/lotes/${loteId}/imprimir`);
+  revalidatePath("/eventos/lotes");
+  redirect(`/eventos/lotes/${loteId}/imprimir`);
 }
 
 export async function eliminarLoteAction(formData: FormData): Promise<LoteActionResult> {
@@ -142,7 +142,7 @@ export async function eliminarLoteAction(formData: FormData): Promise<LoteAction
     }
     throw err;
   }
-  revalidatePath("/lotes");
+  revalidatePath("/eventos/lotes");
 }
 
 export async function editarProductosLoteAction(formData: FormData): Promise<LoteActionResult> {
@@ -155,5 +155,5 @@ export async function editarProductosLoteAction(formData: FormData): Promise<Lot
   const productos = productosDesde(formData);
   const r = await editarProductosLote(db, loteId, productos);
   if ("error" in r) return { error: r.error };
-  revalidatePath("/lotes");
+  revalidatePath("/eventos/lotes");
 }

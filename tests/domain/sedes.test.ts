@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createTestDb } from "@/test/db";
-import { listarSedes, sedesActivas } from "@/domain/sedesQuery";
+import { listarSedes, sedesActivas, sedeEstaActiva } from "@/domain/sedesQuery";
 import { crearSede, editarSede, toggleSedeActiva } from "@/domain/sedes";
 
 let close: () => Promise<void>;
@@ -41,5 +41,15 @@ describe("dominio de sedes", () => {
     const activas = await sedesActivas(t.db);
     expect(activas.map((s) => s.nombre)).toEqual(["DANLI"]);
     expect(await listarSedes(t.db)).toHaveLength(2);
+  });
+
+  it("sedeEstaActiva: true si activa, false si inactiva o inexistente", async () => {
+    const t = await createTestDb(); close = t.close;
+    const a = await crearSede(t.db, "MEGAMALL");
+    if ("error" in a) throw new Error(a.error);
+    expect(await sedeEstaActiva(t.db, a.id)).toBe(true);
+    await toggleSedeActiva(t.db, a.id);
+    expect(await sedeEstaActiva(t.db, a.id)).toBe(false);
+    expect(await sedeEstaActiva(t.db, 999999)).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySession, type SessionPayload } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/session";
 
-const ADMIN_PREFIXES = ["/dashboard", "/reportes", "/empresas", "/lotes", "/configuracion"];
+const ADMIN_PREFIXES = ["/dashboard", "/reportes", "/eventos", "/configuracion"];
 const TAQUILLA_PREFIXES = ["/taquilla", "/canje"];
 
 function destinoDisponible(sesion: SessionPayload | null): string {
@@ -35,8 +35,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/empresas/:path*",
-    "/lotes/:path*",
+    "/eventos/:path*",
     "/reportes/:path*",
     "/configuracion/:path*",
     "/taquilla/:path*",

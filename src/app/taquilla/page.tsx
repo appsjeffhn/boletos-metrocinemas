@@ -37,6 +37,9 @@ export default async function TaquillaPage() {
   }
 
   const [sede] = await db.select().from(sedes).where(eq(sedes.id, u.activeSedeId));
+  // Si la sede activa fue desactivada (p. ej. mientras la sesión seguía abierta),
+  // no se puede canjear ahí: mandar a elegir otra sede activa.
+  if (!sede || !sede.activo) redirect("/elegir-sede");
 
   return (
     <main className="min-h-screen">

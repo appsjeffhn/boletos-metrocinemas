@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { usuarios, usuarioSedes } from "@/db/schema";
+import { sedes, usuarios, usuarioSedes } from "@/db/schema";
 import { verifyPassword, signSession } from "@/lib/auth";
 import { setSessionCookie } from "@/lib/session";
 
@@ -25,17 +25,21 @@ export async function iniciarSesion(
   }
 
   const filasSedes = await db
-    .select({ sedeId: usuarioSedes.sedeId })
+    .select({ sedeId: usuarioSedes.sedeId, activo: sedes.activo })
     .from(usuarioSedes)
+    .innerJoin(sedes, eq(sedes.id, usuarioSedes.sedeId))
     .where(eq(usuarioSedes.usuarioId, u.id));
   const sedeIds = filasSedes.map((f) => f.sedeId);
+  // Solo las sedes activas cuentan para elegir/asignar la sede de trabajo:
+  // una sede desactivada no debe poder usarse para canjear.
+  const sedeIdsActivas = filasSedes.filter((f) => f.activo).map((f) => f.sedeId);
 
-  const activeSedeId = puedeTaquilla && sedeIds.length === 1 ? sedeIds[0] : null;
+  const activeSedeId = puedeTaquilla && sedeIdsActivas.length === 1 ? sedeIdsActivas[0] : null;
 
   const token = await signSession({ userId: u.id, puedeAdmin, puedeTaquilla, sedeIds, activeSedeId });
   await setSessionCookie(token);
 
   if (puedeAdmin) redirect("/dashboard");
-  if (sedeIds.length > 1) redirect("/elegir-sede");
+  if (sedeIdsActivas.length > 1) redirect("/elegir-sede");
   redirect("/taquilla");
 }

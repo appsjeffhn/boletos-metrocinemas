@@ -26,7 +26,7 @@ export async function crearEmpresa(formData: FormData): Promise<void> {
     .values({ nombre, prefijo, contacto, telefono })
     .onConflictDoNothing();
 
-  revalidatePath("/empresas");
+  revalidatePath("/eventos/empresas");
 }
 
 export async function editarEmpresa(formData: FormData): Promise<EmpresaActionResult> {
@@ -48,7 +48,7 @@ export async function editarEmpresa(formData: FormData): Promise<EmpresaActionRe
     .set({ nombre, prefijo, contacto, telefono })
     .where(eq(empresas.id, id));
 
-  revalidatePath("/empresas");
+  revalidatePath("/eventos/empresas");
 }
 
 export async function eliminarEmpresa(formData: FormData): Promise<EmpresaActionResult> {
@@ -75,5 +75,5 @@ export async function eliminarEmpresa(formData: FormData): Promise<EmpresaAction
         "No se puede eliminar: la empresa tiene lotes en su historial. Se conserva para mantener el registro de canjes.",
     };
   }
-  revalidatePath("/empresas");
+  revalidatePath("/eventos/empresas");
 }

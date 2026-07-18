@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { canjearMultiple, obtenerBoletoPorToken, type ResultadoCanjeMultiple } from "@/domain/boletos";
 import { productosPorToken } from "@/domain/loteProductosQuery";
+import { sedeEstaActiva } from "@/domain/sedesQuery";
 import type { ProductoBoleto } from "@/domain/totalizar";
 import { getCurrentUser } from "@/lib/session";
 import { hoyISOEn } from "@/lib/fechas";
@@ -77,6 +78,9 @@ export async function confirmarCanjeMultiple(
   if (!u) redirect("/login");
   if (!u.puedeTaquilla || !u.activeSedeId) {
     return { error: "Tu usuario no tiene una sede activa." };
+  }
+  if (!(await sedeEstaActiva(db, u.activeSedeId))) {
+    return { error: "Tu sede fue desactivada. Elige otra sede para canjear." };
   }
 
   const nombre = portadorNombre.trim();

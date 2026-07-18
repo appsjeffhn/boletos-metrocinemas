@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { sedes } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { cerrarSesion } from "@/app/(admin)/logout/actions";
 import { BrandHeader } from "@/components/BrandHeader";
@@ -32,6 +35,10 @@ export default async function TaquillaMultiplePage() {
       </main>
     );
   }
+
+  const [sede] = await db.select().from(sedes).where(eq(sedes.id, u.activeSedeId));
+  // Sede activa desactivada: no se puede canjear ahí.
+  if (!sede || !sede.activo) redirect("/elegir-sede");
 
   return (
     <main className="min-h-screen">

@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { canjearBoleto } from "@/domain/boletos";
+import { sedeEstaActiva } from "@/domain/sedesQuery";
 import { getCurrentUser } from "@/lib/session";
 import { hoyISOEn } from "@/lib/fechas";
 import { zonaHoraria } from "@/domain/configuracion";
@@ -17,6 +18,9 @@ export async function confirmarCanje(
   if (!u) redirect("/login");
   if (!u.puedeTaquilla || !u.activeSedeId) {
     return { error: "Tu usuario no tiene una sede activa." };
+  }
+  if (!(await sedeEstaActiva(db, u.activeSedeId))) {
+    return { error: "Tu sede fue desactivada. Elige otra sede para canjear." };
   }
 
   const portadorNombre = String(formData.get("portadorNombre") ?? "").trim();

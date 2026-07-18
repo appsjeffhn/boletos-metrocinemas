@@ -15,7 +15,7 @@ export async function crearProductoAction(formData: FormData): Promise<ProductoA
   const precio = String(formData.get("precio") ?? "");
   const r = await crearProducto(db, { nombre, detalle, precio });
   if ("error" in r) return { error: r.error };
-  revalidatePath("/productos");
+  revalidatePath("/eventos/productos");
 }
 
 export async function editarProductoAction(formData: FormData): Promise<ProductoActionResult> {
@@ -29,7 +29,7 @@ export async function editarProductoAction(formData: FormData): Promise<Producto
   const activo = formData.get("activo") === "1";
   const r = await editarProducto(db, id, { nombre, detalle, precio, activo });
   if ("error" in r) return { error: r.error };
-  revalidatePath("/productos");
+  revalidatePath("/eventos/productos");
 }
 
 export async function desactivarProductoAction(formData: FormData): Promise<ProductoActionResult> {
@@ -38,5 +38,5 @@ export async function desactivarProductoAction(formData: FormData): Promise<Prod
   const id = Number(formData.get("id"));
   if (!id) return { error: "Producto inválido." };
   await desactivarProducto(db, id);
-  revalidatePath("/productos");
+  revalidatePath("/eventos/productos");
 }
