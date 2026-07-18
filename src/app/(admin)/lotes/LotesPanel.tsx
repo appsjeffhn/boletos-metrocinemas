@@ -552,7 +552,7 @@ export function LotesPanel({
         )}
       </Modal>
 
-      <Modal open={editandoProd !== null} onClose={() => setEditandoProd(null)} title="Productos del lote">
+      <Modal open={editandoProd !== null} onClose={() => setEditandoProd(null)} title="Productos del lote" size="lg">
         {editandoProd && (
           <form key={editandoProd.id} action={onEditarProductos} className="space-y-3">
             <input type="hidden" name="loteId" value={editandoProd.id} />
