@@ -102,3 +102,9 @@ export const loteProductos = pgTable("lote_productos", {
   loteIdx: index("lote_productos_lote_idx").on(t.loteId),
   productoIdx: index("lote_productos_producto_idx").on(t.productoId),
 }));
+
+export const configuracion = pgTable("configuracion", {
+  id: integer("id").primaryKey(),
+  zonaHoraria: text("zona_horaria").notNull().default("America/Tegucigalpa"),
+  actualizadoEn: timestamp("actualizado_en").notNull().defaultNow(),
+});

@@ -65,6 +65,11 @@ async function crearEsquema(db: DrizzleDb) {
       creado_en timestamp NOT NULL DEFAULT now())`);
   await db.execute(sql`CREATE INDEX lote_productos_lote_idx ON lote_productos(lote_id)`);
   await db.execute(sql`CREATE INDEX lote_productos_producto_idx ON lote_productos(producto_id)`);
+  await db.execute(sql`
+    CREATE TABLE configuracion (
+      id integer PRIMARY KEY,
+      zona_horaria text NOT NULL DEFAULT 'America/Tegucigalpa',
+      actualizado_en timestamp NOT NULL DEFAULT now())`);
 }
 
 export async function createTestDb() {
