@@ -9,7 +9,7 @@ import { Table, Th, Td } from "@/components/ui/Table";
 import type { UsuarioListado } from "@/domain/usuariosQuery";
 import { crearUsuario, editarUsuario, toggleUsuarioActivo, type UsuarioActionResult } from "./actions";
 
-type Sede = { id: number; nombre: string };
+type Sede = { id: number; nombre: string; activo: boolean };
 
 function SedesSelector({
   sedes,
@@ -22,6 +22,10 @@ function SedesSelector({
 }) {
   const [todas, setTodas] = useState(sedes.length > 0 && initialSelectedIds.length === sedes.length);
   const [selected, setSelected] = useState<Set<number>>(new Set(initialSelectedIds));
+
+  // Mostrar activas + cualquiera ya asignada (aunque esté inactiva), para que
+  // las sucursales inactivas ya asignadas no se pierdan silenciosamente al editar.
+  const seleccionables = sedes.filter((s) => s.activo || initialSelectedIds.includes(s.id));
 
   return (
     <div className="flex flex-col gap-2">
@@ -36,9 +40,9 @@ function SedesSelector({
         />
         Todas las sucursales
       </label>
-      {sedes.length > 0 ? (
+      {seleccionables.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pl-1">
-          {sedes.map((s) => (
+          {seleccionables.map((s) => (
             <label key={`${idPrefix}-${s.id}`} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -54,6 +58,7 @@ function SedesSelector({
                 }}
               />
               {s.nombre}
+              {!s.activo && " (inactiva)"}
             </label>
           ))}
         </div>

@@ -3,14 +3,14 @@ import { listarEmpresas } from "@/domain/empresasQuery";
 import { listarLotes } from "@/domain/lotesQuery";
 import { listarProductos } from "@/domain/productosQuery";
 import { productosDeLotes } from "@/domain/loteProductosQuery";
-import { sedesActivas } from "@/domain/sedesQuery";
+import { listarSedes } from "@/domain/sedesQuery";
 import { LotesPanel } from "./LotesPanel";
 
 export default async function LotesPage() {
   const [empresas, lotes, sedes, catalogo] = await Promise.all([
     listarEmpresas(db),
     listarLotes(db),
-    sedesActivas(db),
+    listarSedes(db),
     listarProductos(db),
   ]);
 

@@ -20,7 +20,7 @@ import {
 } from "./actions";
 
 type Empresa = { id: number; nombre: string };
-type Sede = { id: number; nombre: string };
+type Sede = { id: number; nombre: string; activo: boolean };
 
 function SedesSelector({
   sedes,
@@ -33,6 +33,10 @@ function SedesSelector({
 }) {
   const [todas, setTodas] = useState(initialTodas);
   const [selected, setSelected] = useState<Set<number>>(new Set(initialSelectedIds));
+
+  // Mostrar activas + cualquiera ya asignada (aunque esté inactiva), para que
+  // las sedes inactivas ya asignadas no se pierdan silenciosamente al editar.
+  const seleccionables = sedes.filter((s) => s.activo || initialSelectedIds.includes(s.id));
 
   return (
     <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-5">
@@ -47,9 +51,9 @@ function SedesSelector({
         />
         Todos los complejos
       </label>
-      {sedes.length > 0 ? (
+      {seleccionables.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 pl-1">
-          {sedes.map((s) => (
+          {seleccionables.map((s) => (
             <label key={s.id} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -65,6 +69,7 @@ function SedesSelector({
                 }}
               />
               {s.nombre}
+              {!s.activo && " (inactiva)"}
             </label>
           ))}
         </div>
