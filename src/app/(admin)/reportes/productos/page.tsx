@@ -3,6 +3,8 @@ import { db } from "@/db/client";
 import { sedes as sedesTable } from "@/db/schema";
 import { listarEmpresas } from "@/domain/empresasQuery";
 import { resumenProductos, detalleCanjesProductos } from "@/domain/reportesProductos";
+import { zonaHoraria } from "@/domain/configuracion";
+import { fechaHoraEn } from "@/lib/fechas";
 import { Card } from "@/components/ui/Card";
 import { Table, Th, Td } from "@/components/ui/Table";
 
@@ -19,11 +21,12 @@ export default async function ReporteProductosPage(
   const desde = sp.desde || undefined;
   const hasta = sp.hasta || undefined;
 
-  const [empresas, sedes, resumen, detalle] = await Promise.all([
+  const [empresas, sedes, resumen, detalle, tz] = await Promise.all([
     listarEmpresas(db),
     db.select({ id: sedesTable.id, nombre: sedesTable.nombre }).from(sedesTable).orderBy(sedesTable.nombre),
     resumenProductos(db, { empresaId }),
     detalleCanjesProductos(db, { empresaId, sedeId, desde, hasta }),
+    zonaHoraria(db),
   ]);
 
   const qs = new URLSearchParams(
@@ -122,7 +125,7 @@ export default async function ReporteProductosPage(
                 <Td>{d.cantidad}</Td>
                 <Td>{d.importe == null ? "—" : money(d.importe)}</Td>
                 <Td>{d.operador ?? "—"}</Td>
-                <Td>{d.fecha ? new Date(d.fecha).toLocaleString("es-HN") : "—"}</Td>
+                <Td>{d.fecha ? fechaHoraEn(new Date(d.fecha), tz) : "—"}</Td>
               </tr>
             ))}
           </tbody>

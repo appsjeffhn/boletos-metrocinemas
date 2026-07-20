@@ -2,6 +2,8 @@ import Link from "next/link";
 import { db } from "@/db/client";
 import { detalleEmpresa } from "@/domain/reportes";
 import { resumenProductos } from "@/domain/reportesProductos";
+import { zonaHoraria } from "@/domain/configuracion";
+import { fechaHoraEn } from "@/lib/fechas";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Table, Th, Td } from "@/components/ui/Table";
@@ -13,9 +15,10 @@ export default async function ReporteEmpresaPage({
   params: Promise<{ empresaId: string }>;
 }) {
   const { empresaId } = await params;
-  const [d, resumen] = await Promise.all([
+  const [d, resumen, tz] = await Promise.all([
     detalleEmpresa(db, Number(empresaId)),
     resumenProductos(db, { empresaId: Number(empresaId) }),
+    zonaHoraria(db),
   ]);
 
   if (!d) {
@@ -117,7 +120,7 @@ export default async function ReporteEmpresaPage({
                     <Td>{c.sede ?? "—"}</Td>
                     <Td>{c.portadorNombre ?? "—"}</Td>
                     <Td>{c.portadorDni ?? "—"}</Td>
-                    <Td>{c.fecha ? c.fecha.toLocaleString("es-HN") : "—"}</Td>
+                    <Td>{c.fecha ? fechaHoraEn(new Date(c.fecha), tz) : "—"}</Td>
                   </tr>
                 ))}
               </tbody>

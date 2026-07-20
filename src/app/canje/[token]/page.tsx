@@ -4,7 +4,7 @@ import { obtenerBoletoPorToken } from "@/domain/boletos";
 import { productosPorToken } from "@/domain/loteProductosQuery";
 import { getCurrentUser } from "@/lib/session";
 import { Card } from "@/components/ui/Card";
-import { hoyISOEn } from "@/lib/fechas";
+import { hoyISOEn, fechaHoraEn } from "@/lib/fechas";
 import { zonaHoraria } from "@/domain/configuracion";
 import FormularioCanje from "./FormularioCanje";
 
@@ -20,7 +20,8 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
   const u = await getCurrentUser();
   if (!u) redirect("/login");
   const { token } = await params;
-  const hoy = hoyISOEn(await zonaHoraria(db));
+  const tz = await zonaHoraria(db);
+  const hoy = hoyISOEn(tz);
   const r = await obtenerBoletoPorToken(db, token, hoy);
 
   if (!r.ok) {
@@ -39,7 +40,7 @@ export default async function CanjePage({ params }: { params: Promise<{ token: s
           {r.razon === "canjeado" && canje && (
             <div className="text-left text-sm space-y-1 pt-2 border-t" style={{ borderColor: "var(--black-10)" }}>
               <p><span className="font-semibold">Sede:</span> {canje.sede ?? "—"}</p>
-              <p><span className="font-semibold">Fecha:</span> {canje.fecha ? new Date(canje.fecha).toLocaleString("es-HN") : "—"}</p>
+              <p><span className="font-semibold">Fecha:</span> {canje.fecha ? fechaHoraEn(new Date(canje.fecha), tz) : "—"}</p>
               <p><span className="font-semibold">Portador:</span> {canje.portadorNombre ?? "—"} ({canje.portadorDni ?? "—"})</p>
               <p><span className="font-semibold">Operador:</span> {canje.operador ?? "—"}</p>
             </div>

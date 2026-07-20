@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { sedes } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { zonaHoraria } from "@/domain/configuracion";
 import { cerrarSesion } from "@/app/(admin)/logout/actions";
 import { BrandHeader } from "@/components/BrandHeader";
 import { Card } from "@/components/ui/Card";
@@ -40,6 +41,8 @@ export default async function TaquillaMultiplePage() {
   // Sede activa desactivada: no se puede canjear ahí.
   if (!sede || !sede.activo) redirect("/elegir-sede");
 
+  const tz = await zonaHoraria(db);
+
   return (
     <main className="min-h-screen">
       <BrandHeader right={<BotonCerrarSesion />} />
@@ -47,7 +50,7 @@ export default async function TaquillaMultiplePage() {
         <Link href="/taquilla" className="text-sm underline" style={{ color: "var(--blue-hover)" }}>
           ← Volver a escaneo sencillo
         </Link>
-        <MultiScanner />
+        <MultiScanner tz={tz} />
       </div>
     </main>
   );

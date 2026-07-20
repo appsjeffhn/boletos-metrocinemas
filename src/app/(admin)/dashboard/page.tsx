@@ -2,6 +2,8 @@ import Link from "next/link";
 import { db } from "@/db/client";
 import { dashboardKpis } from "@/domain/dashboard";
 import { resumenProductos } from "@/domain/reportesProductos";
+import { zonaHoraria } from "@/domain/configuracion";
+import { fechaHoraEn } from "@/lib/fechas";
 import s from "./dashboard.module.css";
 
 function money(n: number): string {
@@ -9,7 +11,7 @@ function money(n: number): string {
 }
 
 export default async function DashboardPage() {
-  const [kpis, resumen] = await Promise.all([dashboardKpis(db), resumenProductos(db, {})]);
+  const [kpis, resumen, tz] = await Promise.all([dashboardKpis(db), resumenProductos(db, {}), zonaHoraria(db)]);
 
   const valOtorgado = resumen.reduce((a, r) => a + r.montoCreado, 0);
   const valCanjeado = resumen.reduce((a, r) => a + r.montoCanjeado, 0);
@@ -186,7 +188,7 @@ export default async function DashboardPage() {
                   <span role="cell" className={s.liCode}>{c.codigo}</span>
                   <span role="cell" className={s.liMuted}>{c.empresa}</span>
                   <span role="cell" className={s.liMuted}>{c.sede ?? "—"}</span>
-                  <span role="cell" className={s.liDate}>{c.fecha ? new Date(c.fecha).toLocaleString("es-HN") : "—"}</span>
+                  <span role="cell" className={s.liDate}>{c.fecha ? fechaHoraEn(new Date(c.fecha), tz) : "—"}</span>
                 </div>
               ))}
             </div>

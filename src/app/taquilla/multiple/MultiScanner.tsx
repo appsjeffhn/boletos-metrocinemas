@@ -7,6 +7,7 @@ import { DniInput } from "@/components/DniInput";
 import { Button } from "@/components/ui/Button";
 import { confirmarCanjeMultiple, infoBoleto, type CanjeMultipleState, type CanjeInfo, type InfoBoleto } from "./actions";
 import { totalizarProductos } from "@/domain/totalizar";
+import { fechaHoraEn } from "@/lib/fechas";
 
 const RAZONES: Record<string, string> = {
   invalido: "Boleto inválido o falso",
@@ -29,24 +30,24 @@ const COOLDOWN_MS = 2000;
 
 type Item = Omit<InfoBoleto, "estado"> & { estado: InfoBoleto["estado"] | "buscando" };
 
-function fmtFecha(iso: string | null): string {
+function fmtFecha(iso: string | null, tz: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("es-HN");
+  return fechaHoraEn(new Date(iso), tz);
 }
 
-function DetalleCanje({ canje }: { canje: CanjeInfo }) {
+function DetalleCanje({ canje, tz }: { canje: CanjeInfo; tz: string }) {
   return (
     <div className="mt-1 text-xs rounded-lg p-2" style={{ background: "var(--black-10)", color: "var(--black-60)" }}>
       <p><span className="font-semibold">Sede:</span> {canje.sede ?? "—"}</p>
       <p><span className="font-semibold">Usuario:</span> {canje.operador ?? "—"}</p>
       <p><span className="font-semibold">Persona:</span> {canje.portadorNombre ?? "—"}</p>
       <p><span className="font-semibold">DNI:</span> {canje.portadorDni ?? "—"}</p>
-      <p><span className="font-semibold">Fecha:</span> {fmtFecha(canje.fecha)}</p>
+      <p><span className="font-semibold">Fecha:</span> {fmtFecha(canje.fecha, tz)}</p>
     </div>
   );
 }
 
-export default function MultiScanner() {
+export default function MultiScanner({ tz }: { tz: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [flash, setFlash] = useState(false);
   const [portadorNombre, setPortadorNombre] = useState("");
@@ -177,7 +178,7 @@ export default function MultiScanner() {
                     </span>
                   )}
                 </div>
-                {yaCanjeado && it?.canje && expandido.has(r.token) && <DetalleCanje canje={it.canje} />}
+                {yaCanjeado && it?.canje && expandido.has(r.token) && <DetalleCanje canje={it.canje} tz={tz} />}
               </div>
             );
           })}
@@ -231,7 +232,7 @@ export default function MultiScanner() {
                       </button>
                     </span>
                   </div>
-                  {yaCanjeado && it.canje && expandido.has(it.token) && <DetalleCanje canje={it.canje} />}
+                  {yaCanjeado && it.canje && expandido.has(it.token) && <DetalleCanje canje={it.canje} tz={tz} />}
                 </li>
               );
             })}
